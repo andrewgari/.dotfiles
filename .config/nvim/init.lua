@@ -1,2 +1,1 @@
 require("covadax")
-print("Hello")
