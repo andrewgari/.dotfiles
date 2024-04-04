@@ -1,0 +1,13 @@
+[Unit]
+Description=Mount Unraid NFS Share (Vault)
+After=network-online.target
+Wants=network-online.target
+
+[Mount]
+What=192.168.50.3:/mnt/user/vault
+Where=/mnt/unraid/vault
+Type=nfs
+Options=_netdev,noatime,nofail,x-systemd.automount
+
+[Install]
+WantedBy=multi-user.target

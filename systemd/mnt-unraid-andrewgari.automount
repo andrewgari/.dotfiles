@@ -1,0 +1,11 @@
+[Unit]
+Description=Automount Unraid NFS Share (Andrewgari)
+After=network-online.target
+Wants=network-online.target
+
+[Automount]
+Where=/mnt/unraid/andrewgari
+TimeoutIdleSec=600
+
+[Install]
+WantedBy=multi-user.target
