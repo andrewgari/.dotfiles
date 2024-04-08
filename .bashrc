@@ -1,4 +1,9 @@
 source ~/.aliases
+export VARIABLE=content
+
+# Use bash-completion, if available
+[[ $PS1 && -f /usr/share/bash-completion/bash_completion ]] && . /usr/share/bash-completion/bash_completion
+
 __main() {
                 local major="${BASH_VERSINFO[0]}"
                 local minor="${BASH_VERSINFO[1]}"
