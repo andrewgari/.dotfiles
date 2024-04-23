@@ -16,3 +16,5 @@ __main() {
             }
             __main
             unset -f __main
+
+neofetch
