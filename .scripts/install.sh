@@ -20,6 +20,7 @@ PACKAGE_MANAGER=$(detect_package_manager)
 
 # Common applications to install
 APPS=(
+    "alacritty"
     "flatpak"
     "git"
     "neovim"
