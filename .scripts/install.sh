@@ -62,12 +62,12 @@ install_dnf() {
     sudo dnf update -y
     
     # Enable RPM Fusion for extra packages
-    sudo dnf install -y dnf-plugins-core
-    sudo dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
-    sudo dnf install -y https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+    sudo dnf install -y dnf-plugins-core --skip-unavailable
+    sudo dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm --skip-unavailable
+    sudo dnf install -y https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm --skip-unavailable
     
     # Install apps
-    sudo dnf install -y "${APPS[@]}"
+    sudo dnf install -y "${APPS[@]}" --skip-unavailable
     
     # Enable Flatpak
     sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo

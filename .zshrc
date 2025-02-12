@@ -27,8 +27,8 @@ setopt APPEND_HISTORY       # Append to history file instead of overwriting
 # Key Bindings (History Search)
 # -----------------------------
 
-bindkey '^[[A' history-substring-search-up   # Up arrow for fuzzy search
-bindkey '^[[B' history-substring-search-down # Down arrow for fuzzy search
+#bindkey '^[[A' history-substring-search-up   # Up arrow for fuzzy search
+#bindkey '^[[B' history-substring-search-down # Down arrow for fuzzy search
 
 # -----------------------------
 # Prompt Enhancements

@@ -7,7 +7,7 @@ install_docker() {
     if ! command -v docker &> /dev/null; then
         echo "Installing Docker..."
         if command -v dnf &> /dev/null; then
-            sudo dnf install -y docker docker-compose
+            sudo dnf install -y docker docker-compose --skip-unavailable
         elif command -v apt &> /dev/null; then
             sudo apt update && sudo apt install -y docker.io docker-compose
         elif command -v pacman &> /dev/null; then
@@ -26,7 +26,10 @@ install_vscode() {
     if ! command -v code &> /dev/null; then
         echo "Installing VSCode..."
         if command -v dnf &> /dev/null; then
-            sudo dnf install -y code
+            sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+            echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
+            dnf check-update
+            sudo dnf install code # or code-insiders
         elif command -v apt &> /dev/null; then
             sudo apt install -y code
         elif command -v pacman &> /dev/null; then
@@ -43,8 +46,8 @@ install_vscode() {
     code --install-extension redhat.java
     code --install-extension fwcd.kotlin
     code --install-extension ms-python.python
-    code --install-extension ms-android.vscode-android
-    code --install-extension ms-vscode.vscode-json
+    # code --install-extension ms-android.vscode-android
+    # code --install-extension ms-vscode.vscode-json
     code --install-extension redhat.vscode-yaml
     code --install-extension bungcip.better-toml
     code --install-extension dotjoshjohnson.xml
@@ -54,7 +57,7 @@ install_vscode() {
 install_android_tools() {
     echo "Installing Android Platform Tools (ADB) and scrcpy..."
     if command -v dnf &> /dev/null; then
-        sudo dnf install -y android-tools scrcpy
+        sudo dnf install -y android-tools scrcpy --skip-unavailable
     elif command -v apt &> /dev/null; then
         sudo apt update && sudo apt install -y adb scrcpy
     elif command -v pacman &> /dev/null; then
