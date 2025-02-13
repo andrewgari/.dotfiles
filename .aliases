@@ -114,6 +114,8 @@ alias dpa='docker ps -a'
 alias drm='docker rm $(docker ps -aq)'
 alias dstop='docker stop $(docker ps -q)'
 
+alias unraid='ssh covadax@192.168.50.3'
+
 # Use `bat` as `cat` if installed
 if command -v bat &>/dev/null; then
     alias cat='bat --style=plain'

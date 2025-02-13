@@ -46,3 +46,5 @@ fi
 autoload -Uz compinit && compinit
 zstyle
 source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+fastfetch

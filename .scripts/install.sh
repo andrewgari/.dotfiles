@@ -35,6 +35,7 @@ APPS=(
     "jetbrains-toolbox"  # JetBrains IDE Manager
     "starship"
     "zsh"
+    "fastfetch"
     "zsh-autosuggestions"
     "zsh-syntax-highlighting"
     "docker"
