@@ -81,6 +81,8 @@ $battery\
 $time
 """
 
+command_timeout = 2000
+
 [env_var.SOFTWARE_UPDATE_AVAILABLE]
 variable = 'SOFTWARE_UPDATE_AVAILABLE'
 format = '[$env_value]($style)'

@@ -81,7 +81,7 @@ bindkey '^H' backward-kill-word  # Ctrl + Backspace
 bindkey '^U' backward-kill-line
 bindkey '^L' clear-screen
 bindkey '^[q' kill-whole-line
-bindkey -M menuselect '^[[Z' reverse-menu-complete
+bindkey -M viins '^[[Z' reverse-menu-complete
 
 # -----------------------------
 # Prompt Enhancements
