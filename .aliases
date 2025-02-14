@@ -93,6 +93,24 @@ if command -v exa &>/dev/null; then
     alias lsd='exa -D --icons'                     # Only show directories
 fi
 
+# Function to force clone dotfiles repository with backup and move files to home directory
+clone_dotfiles() {
+    DOTFILES_REPO="https://github.com/andrewgari/.dotfiles"
+    DOTFILES_DIR="$HOME/.dotfiles"
+    BACKUP_DIR="$HOME/.dotfiles_backup_$(date +%Y%m%d%H%M%S)"
+    
+    if [[ -d "$DOTFILES_DIR" ]]; then
+        echo "Backing up existing dotfiles to $BACKUP_DIR..."
+        mv "$DOTFILES_DIR" "$BACKUP_DIR"
+    fi
+    
+    echo "Cloning dotfiles repository..."
+    git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
+    
+    echo "Moving dotfiles to home directory..."
+    rsync -av --ignore-existing "$DOTFILES_DIR/" "$HOME/"
+}
+
 # -----------------------------
 # Podman (Docker Alternative)
 # -----------------------------

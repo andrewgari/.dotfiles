@@ -1,18 +1,6 @@
 # ~/.zshrc - Portable Zsh Configuration
 
-# -----------------------------
-# Dependency Auto-Installer
-# -----------------------------
-
-install_if_missing() {
-    local package=$1
-    local install_cmd=$2
-    if ! command -v "$package" &>/dev/null; then
-        echo "⚡ Installing missing dependency: $package..."
-        eval "$install_cmd"
-    fi
-}
-
+# ---------
 # Detect OS & Package Manager
 if [ -f /etc/os-release ]; then
     . /etc/os-release
@@ -37,22 +25,6 @@ if [[ ! -f "$HOME/.zinit/bin/zinit.zsh" ]]; then
 fi
 source "$HOME/.zinit/bin/zinit.zsh"
 
-# Install Common CLI Tools (if system package manager is detected)
-if [[ -n "$PKG_INSTALL_CMD" ]]; then
-    install_if_missing "zoxide" "$PKG_INSTALL_CMD zoxide"
-    install_if_missing "fzf" "$PKG_INSTALL_CMD fzf"
-    install_if_missing "bat" "$PKG_INSTALL_CMD bat"
-    install_if_missing "exa" "$PKG_INSTALL_CMD exa"
-    install_if_missing "fastfetch" "$PKG_INSTALL_CMD fastfetch"
-    install_if_missing "htop" "$PKG_INSTALL_CMD htop"
-fi
-
-
-# -----------------------------
-# Zsh Plugin Manager (zinit)
-# -----------------------------
-
-
 # -----------------------------
 # Machine-Specific Configuration
 # -----------------------------
@@ -62,6 +34,11 @@ if [ -f ~/.zshrc.local ]; then
     source ~/.zshrc.local
 fi
 
+if [[ -f ~/.netrc ]]; then
+    export GITHUB_TOKEN=$(awk '/github.com/ {getline; print $2}' ~/.netrc)
+fi
+
+
 # -----------------------------
 # Aliases
 # -----------------------------
@@ -69,6 +46,10 @@ fi
 # Load global aliases (shared across systems)
 if [ -f ~/.aliases ]; then
     source ~/.aliases
+fi
+
+if [ -f ~/.aliases.local ]; then
+    source ~/.aliases.local
 fi
 
 export SOFTWARE_UPDATE_AVAILABLE='📦 '
@@ -92,8 +73,15 @@ setopt APPEND_HISTORY       # Append to history file instead of overwriting
 # -----------------------------
 
 # Uncomment these lines if you want to enable history substring search
-#bindkey '^[[A' history-substring-search-up
-#bindkey '^[[B' history-substring-search-down
+bindkey '^[[A' history-search-backward  # Up Arrow for history search
+bindkey '^[[B' history-search-forward   # Down Arrow for history search
+bindkey '^[[1;5C' forward-word   # Ctrl + →
+bindkey '^[[1;5D' backward-word  # Ctrl + ←
+bindkey '^H' backward-kill-word  # Ctrl + Backspace
+bindkey '^U' backward-kill-line
+bindkey '^L' clear-screen
+bindkey '^[q' kill-whole-line
+bindkey -M menuselect '^[[Z' reverse-menu-complete
 
 # -----------------------------
 # Prompt Enhancements

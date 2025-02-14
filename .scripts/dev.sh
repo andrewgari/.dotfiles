@@ -68,92 +68,81 @@ install_android_tools() {
     fi
 }
 
-# Function to configure Neovim using ThePrimeagen's guides
-configure_nvim() {
-    echo "Setting up Neovim..."
-    mkdir -p "$HOME/.config/nvim"
-    cat > "$HOME/.config/nvim/init.lua" <<EOF
-require'packer'.startup(function()
-    use 'wbthomason/packer.nvim'
-    use {
-        'neovim/nvim-lspconfig',
-        config = function()
-            require'lspconfig'.tsserver.setup{}
-            require'lspconfig'.gopls.setup{}
-            require'lspconfig'.rust_analyzer.setup{}
-            require'lspconfig'.jdtls.setup{}
-            require'lspconfig'.kotlin_language_server.setup{}
-            require'lspconfig'.pyright.setup{}
-            require'lspconfig'.dockerls.setup{}
-            require'lspconfig'.bashls.setup{}
-            require'lspconfig'.jsonls.setup{}
-            require'lspconfig'.yamlls.setup{}
-            require'lspconfig'.taplo.setup{}
-            require'lspconfig'.lemminx.setup{}
-        end
-    }
-    use {
-        'nvim-telescope/telescope.nvim',
-        requires = { {'nvim-lua/plenary.nvim'} }
-    }
-    use {
-        'nvim-treesitter/nvim-treesitter',
-        run = ':TSUpdate'
-    }
-    use 'ThePrimeagen/harpoon'
-    use 'nvim-lua/plenary.nvim'
-end)
+# Function to install JetBrains Toolbox
+install_jetbrains_toolbox() {
+    echo "Installing JetBrains Toolbox..."
+    TOOLBOX_URL="https://download.jetbrains.com/toolbox/jetbrains-toolbox-1.28.1.tar.gz"
+    TOOLBOX_DIR="$HOME/.jetbrains-toolbox"
+    TOOLBOX_TMP="/tmp/jetbrains-toolbox.tar.gz"
+    
+    mkdir -p "$TOOLBOX_DIR"
+    wget -O "$TOOLBOX_TMP" "$TOOLBOX_URL"
+    tar -xzf "$TOOLBOX_TMP" -C "$TOOLBOX_DIR" --strip-components=1
+    rm "$TOOLBOX_TMP"
+    echo "JetBrains Toolbox installed successfully in $TOOLBOX_DIR"
+}
 
-require'telescope'.setup{}
-require'treesitter'.setup{}
-EOF
+# Function to create a Docker network for dev environments
+setup_docker_network() {
+    docker network create dev-network || true
+}
+
+# Function to create a Docker container for a development environment
+create_dev_container() {
+    local name=$1
+    local image=$2
+    local volumes=$3
+    local extra_args=$4
+
+    echo "Setting up $name development container..."
+    docker run -d --name "$name" --network dev-network $volumes $extra_args "$image" tail -f /dev/null
+}
+
+# Function to configure VS Code for Docker development
+configure_vscode() {
+    mkdir -p "$HOME/.vscode-server"
+    cat > "$HOME/.vscode-server/settings.json" <<EOL
+{
+    "workbench.colorThemme": "GitHub Dark",
+    "remote.containers.dockerPath": "docker",
+    "remote.containers.defaultExtensions": [
+        "ms-vscode-remote.remote-containers",
+        "ms-python.python",
+        "golang.go",
+        "rust-lang.rust-analyzer",
+        "redhat.java",
+        "vscjava.vscode-java-pack",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+    ]
+}
+EOL
+}
+
+# Function to set up development environments
+setup_dev_environments() {
+    echo "Setting up development environments..."
+    create_dev_container "java-dev" "openjdk:latest" "-v $HOME/dev/java:/workspace" "-w /workspace"
+    create_dev_container "kotlin-dev" "gradle:latest" "-v $HOME/dev/kotlin:/workspace" "-w /workspace"
+    create_dev_container "golang-dev" "golang:latest" "-v $HOME/dev/go:/workspace" "-w /workspace"
+    create_dev_container "rust-dev" "rust:latest" "-v $HOME/dev/rust:/workspace" "-w /workspace"
+    create_dev_container "node-dev" "node:latest" "-v $HOME/dev/node:/workspace" "-w /workspace"
+    create_dev_container "python-dev" "python:latest" "-v $HOME/dev/python:/workspace" "-w /workspace"
+    create_dev_container "android-dev" "ghcr.io/cirruslabs/android-sdk:latest" "-v $HOME/dev/android:/workspace" "-w /workspace"
 }
 
 # Function to set up development containers
-setup_dev_containers() {
-    echo "Setting up development containers..."
-    mkdir -p "$HOME/DevContainers"
-    cat > "$HOME/DevContainers/docker-compose.yml" <<EOF
-version: '3'
-services:
-  node:
-    image: node:latest
-    volumes:
-      - .:/workspace
-    command: /bin/sh
-  golang:
-    image: golang:latest
-    volumes:
-      - .:/workspace
-    command: /bin/sh
-  rust:
-    image: rust:latest
-    volumes:
-      - .:/workspace
-    command: /bin/sh
-  java:
-    image: openjdk:latest
-    volumes:
-      - .:/workspace
-    command: /bin/sh
-  kotlin:
-    image: openjdk:latest
-    volumes:
-      - .:/workspace
-    command: /bin/sh
-  python:
-    image: python:latest
-    volumes:
-      - .:/workspace
-    command: /bin/sh
-EOF
-}
-
 install_docker
 install_vscode
+install_jetbrains_toolbox
 install_android_tools
-configure_nvim
-setup_dev_containers
+echo "Development tools installed!"
 
-echo "Development environment setup completed!"
+# Execute setup functions
+setup_docker_network
+setup_dev_environments
+configure_vscode
+
+echo "Development containers have been set up successfully. Use VS Code Remote-Containers to connect."
+
 
