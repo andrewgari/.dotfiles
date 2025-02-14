@@ -71,6 +71,12 @@ alias openport="sudo firewall-cmd --permanent --add-port="
 alias closeport="sudo firewall-cmd --permanent --remove-port="
 alias reloadfirewall="sudo firewall-cmd --reload"
 
+alias start="systemctl start"
+alias stop="systemctl stop"
+alias restart="systemctl restart"
+alias enable="systemctl enable"
+alias disable="systemctl disable"
+
 alias ls="ls --color=auto"
 alias ll="ls -lh"
 alias la="ls -lha"
