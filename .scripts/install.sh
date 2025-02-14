@@ -73,6 +73,9 @@ install_dnf() {
     
     # Enable Flatpak
     sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+    sudo dnf copr enable atim/lazygit -y
+    sudo dnf install lazygit
 }
 
 install_apt() {
