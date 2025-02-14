@@ -1,14 +1,18 @@
+# -----------------------------
+# General Aliases (Portable)
+# -----------------------------
+
 # Colorized and readable `ls`
 alias ls='ls --color=auto'
 alias ll='ls -lah'       # Long format with hidden files
 alias la='ls -A'         # Show hidden files
 alias l='ls -CF'
 
-# System
-alias reload!='exec zsh' # Reload Zsh config
+# Navigation
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
+alias ~='cd ~'
 
 # Safer file operations
 alias cp='cp -iv'  # Prompt before overwriting
@@ -20,137 +24,51 @@ alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 
-# Git aliases
-alias gs="git status"
-alias ga="git add"
-alias gc="git commit -m"
-alias gp="git push"
-alias gpo="git push origin"
-alias gl="git log --oneline --graph --decorate"
-alias gd="git diff"
-alias gco="git checkout"
-alias gcb="git checkout -b"
-alias grm="git reset --hard HEAD"
+# System Utilities
+alias reload!='exec zsh'  # Reload Zsh config
+alias cls='clear'
+alias c='clear'
+alias src='source ~/.zshrc'
+alias editrc='nano ~/.zshrc'
 
-alias update="sudo dnf update -y && flatpak update -y"
-alias upgrade="sudo dnf upgrade --refresh -y"
-alias remove="sudo dnf remove"
-alias search="dnf search"
-alias install="sudo dnf install -y"
-alias list="dnf list installed | grep"
-alias clean="sudo dnf clean all"
-alias autoremove="sudo dnf autoremove -y"
-alias history="dnf history"
-alias reboot="sudo reboot"
-alias shutdown="sudo shutdown now"
-
-alias flatlist="flatpak list --app"
-alias flats="flatpak search"
-alias flatinstall="flatpak install -y"
-alias flatremove="flatpak uninstall -y"
-alias flatinfo="flatpak info"
-
+# Disk & Memory
 alias usage="du -h --max-depth=1"
 alias mem="free -h"
 alias cpu="lscpu"
 alias temp="sensors"
 alias disk="df -h"
+
+# Logs & Processes
 alias journal="journalctl -xe"
 alias logs="sudo journalctl -f"
 alias psfind="ps aux | grep"
 alias ports="sudo ss -tulnp"
 
+# Network Tools
 alias myip="curl ifconfig.me"
 alias localip="ip a | grep 'inet ' | grep -v 127.0.0.1"
 alias ping="ping -c 5"
 alias speed="fast"
 alias netstat="ss -tulnp"
-alias flushdns="sudo systemctl restart NetworkManager"
-alias firewall="sudo firewall-cmd --list-all"
-alias openport="sudo firewall-cmd --permanent --add-port="
-alias closeport="sudo firewall-cmd --permanent --remove-port="
-alias reloadfirewall="sudo firewall-cmd --reload"
 
+# System Services (generic)
 alias start="systemctl start"
 alias stop="systemctl stop"
 alias restart="systemctl restart"
 alias enable="systemctl enable"
 alias disable="systemctl disable"
 
-# Exa Aliases (Replacing ls)
-alias ls='exa --icons'
-alias ll='exa -l --icons'                     # Long format
-alias la='exa -la --icons'                    # Long format, including hidden files
-alias lt='exa -lT --icons'                    # Tree view
-alias ltr='exa -lT --icons --reverse'         # Tree view, reversed
-alias lr='exa -l --reverse --icons'           # Long format, reversed
-alias l1='exa -1 --icons'                     # One file per line
-alias ld='exa -ld --icons */'                 # List directories only
-alias lg='exa -l --git --icons'               # Show Git metadata
-alias lf='exa -l --icons | grep'              # List files and grep results
-alias lsd='exa -D --icons'                    # Only show directories
-
-# bat Aliases (Replacing cat)
-alias cat='bat --paging=never'      # Default replacement for cat
-alias catn='bat --number'           # Mimic `cat -n` (show line numbers)
-alias catp='bat --plain'            # Plain output, no syntax highlighting
-alias catt='bat --theme="GitHub"'   # Use GitHub theme for consistency
-# Colorize output if exa supports i
-# diff-so-fancy Aliases (Replacing diff)
-alias diff='diff --color=auto | diff-so-fancy'  # Default replacement
-alias diffs='diff --color=auto | diff-so-fancy | less -R'  # Scrollable output
-alias gdiff='git diff --color=always | diff-so-fancy'  # Improve Git diffs
-alias gdiffs='git diff --color=always | diff-so-fancy | less -R'  # Scrollable Git diff
-#
-# t
-alias ls='exa --icons --color=auto'
-alias ..="cd .."
-alias ...="cd ../.."
-alias ~="cd ~"
-alias md="mkdir -p"
-alias rd="rmdir"
-alias rmf="rm -rf"
-alias cpv="rsync -ah --info=progress2"
-
-alias cls="clear"
-alias reload="exec $SHELL"
-alias src="source ~/.zshrc"
-alias editrc="nano ~/.zshrc"
-if [ -n "$ZSH_VERSION" ]; then
-    alias history="fc -l 1"
-else
-    alias history="history"
-fi
-alias grep="grep --color=auto"
+# Fuzzy Finder (if installed)
 if command -v fzf &>/dev/null; then
     alias fzfp="find . | fzf"
 fi
-alias c="clear"
 
-alias docker="podman"
-alias dockerps="podman ps --format table"
-alias dockerimages="podman images"
-alias dockerrm="podman rm -f"
-alias dockerrmi="podman rmi -f"
-alias dockerstop="podman stop"
-alias dockerstart="podman start"
-alias dockerlogs="podman logs -f"
-
-
-# Docker shortcuts
-alias dps='docker ps'
-alias dpa='docker ps -a'
-alias drm='docker rm $(docker ps -aq)'
-alias dstop='docker stop $(docker ps -q)'
-
-alias unraid='ssh covadax@192.168.50.3'
-
-# Use `bat` as `cat` if installed
+# Bat (better `cat` replacement)
 if command -v bat &>/dev/null; then
     alias cat='bat --style=plain'
 fi
 
-# Use `duf` if installed for better disk usage overview
+# Use `duf` for better disk usage overview
 if command -v duf &>/dev/null; then
     alias df='duf --only local'
 fi
@@ -160,130 +78,51 @@ if command -v htop &>/dev/null; then
     alias top='htop'
 fi
 
-# Use `bat` as `cat` if installed
-if command -v bat &>/dev/null; then
-    alias cat='bat --style=plain'
+# Exa (Better `ls`)
+if command -v exa &>/dev/null; then
+    alias ls='exa --icons'
+    alias ll='exa -l --icons'                      # Long format
+    alias la='exa -la --icons'                     # Long format, including hidden files
+    alias lt='exa -lT --icons'                     # Tree view
+    alias ltr='exa -lT --icons --reverse'          # Tree view, reversed
+    alias lr='exa -l --reverse --icons'            # Long format, reversed
+    alias l1='exa -1 --icons'                      # One file per line
+    alias ld='exa -ld --icons */'                  # List directories only
+    alias lg='exa -l --git --icons'                # Show Git metadata
+    alias lf='exa -l --icons | grep'               # List files and grep results
+    alias lsd='exa -D --icons'                     # Only show directories
 fi
 
-# Use `duf` if installed for better disk usage overview
-if command -v duf &>/dev/null; then
-    alias df='duf --only local'
+# -----------------------------
+# Podman (Docker Alternative)
+# -----------------------------
+
+if command -v podman &>/dev/null; then
+    alias docker="podman"
+    alias dockerps="podman ps --format table"
+    alias dockerimages="podman images"
+    alias dockerrm="podman rm -f"
+    alias dockerrmi="podman rmi -f"
+    alias dockerstop="podman stop"
+    alias dockerstart="podman start"
+    alias dockerlogs="podman logs -f"
+
+    # Docker-style shortcuts
+    alias dps='docker ps'
+    alias dpa='docker ps -a'
+    alias drm='docker rm $(docker ps -aq)'
+    alias dstop='docker stop $(docker ps -q)'
 fi
 
-# Use `htop` if installed
-if command -v htop &>/dev/null; then
-    alias top='htop'
-fi
+# -----------------------------
+# Zoxide Smart Navigation
+# -----------------------------
 
-# =============================================================================
-#
-# Utility functions for zoxide.
-#
+if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init zsh)"
 
-# pwd based on the value of _ZO_RESOLVE_SYMLINKS.
-function __zoxide_pwd() {
-    \builtin pwd -L
-}
-
-# cd + custom logic based on the value of _ZO_ECHO.
-function __zoxide_cd() {
-    # shellcheck disable=SC2164
-    \builtin cd -- "$@"
-}
-
-# =============================================================================
-#
-# Hook configuration for zoxide.
-#
-
-# Hook to add new entries to the database.
-function __zoxide_hook() {
-    # shellcheck disable=SC2312
-    \command zoxide add -- "$(__zoxide_pwd)"
-}
-
-# Initialize hook.
-# shellcheck disable=SC2154
-if [[ ${precmd_functions[(Ie)__zoxide_hook]:-} -eq 0 ]] && [[ ${chpwd_functions[(Ie)__zoxide_hook]:-} -eq 0 ]]; then
-    chpwd_functions+=(__zoxide_hook)
-fi
-
-# =============================================================================
-#
-# When using zoxide with --no-cmd, alias these internal functions as desired.
-#
-# Jump to a directory using only keywords.
-function __zoxide_z() {
-    # shellcheck disable=SC2199
-    if [[ "$#" -eq 0 ]]; then
-        __zoxide_cd ~
-    elif [[ "$#" -eq 1 ]] && { [[ -d "$1" ]] || [[ "$1" = '-' ]] || [[ "$1" =~ ^[-+][0-9]$ ]]; }; then
-        __zoxide_cd "$1"
-    else
-        \builtin local result
-        # shellcheck disable=SC2312
-        result="$(\command zoxide query --exclude "$(__zoxide_pwd)" -- "$@")" && __zoxide_cd "${result}"
-    fi
-}
-
-# Jump to a directory using interactive search.
-function __zoxide_zi() {
-    \builtin local result
-    result="$(\command zoxide query --interactive -- "$@")" && __zoxide_cd "${result}"
-}
-
-# =============================================================================
-#
-# Commands for zoxide. Disable these using --no-cmd.
-#
-
-function z() {
-    __zoxide_z "$@"
-}
-
-function zi() {
-    __zoxide_zi "$@"
-}
-
-# Completions.
-if [[ -o zle ]]; then
-    __zoxide_result=''
-
-    function __zoxide_z_complete() {
-        # Only show completions when the cursor is at the end of the line.
-        # shellcheck disable=SC2154
-        [[ "${#words[@]}" -eq "${CURRENT}" ]] || return 0
-
-        if [[ "${#words[@]}" -eq 2 ]]; then
-            # Show completions for local directories.
-            _files -/
-        elif [[ "${words[-1]}" == '' ]]; then
-            # Show completions for Space-Tab.
-            # shellcheck disable=SC2086
-            __zoxide_result="$(\command zoxide query --exclude "$(__zoxide_pwd || \builtin true)" --interactive -- ${words[2,-1]})" || __zoxide_result=''
-
-            # Bind '\e[0n' to helper function.
-            \builtin bindkey '\e[0n' '__zoxide_z_complete_helper'
-            # Send '\e[0n' to console input.
-            \builtin printf '\e[5n'
-        fi
-                                                                                                                # Report that the completion was successful, so that we don't fall back
-        # to another completion function.
-        return 0
-    }
-
-    function __zoxide_z_complete_helper() {
-        if [[ -n "${__zoxide_result}" ]]; then
-            # shellcheck disable=SC2034,SC2296
-            BUFFER="z ${(q-)__zoxide_result}"
-            \builtin zle reset-prompt
-            \builtin zle accept-line
-        else
-            \builtin zle reset-prompt
-        fi
-    }
-    \builtin zle -N __zoxide_z_complete_helper
-
-    [[ "${+functions[compdef]}" -ne 0 ]] && \compdef __zoxide_z_complete z
+    # Zoxide Aliases
+    alias z='zoxide query --exclude "$(pwd)"'  # Jump using partial names
+    alias zi='zoxide query --interactive'      # Interactive fuzzy search
 fi
 
