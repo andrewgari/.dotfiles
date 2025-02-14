@@ -1,0 +1,9 @@
+[user]
+	name = andrewgari
+	email = covadax.ag@gmail.com
+[core]
+	editor = nvim
+[credential]
+	helper = store
+[init]
+	defaultBranch = main

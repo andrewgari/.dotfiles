@@ -77,10 +77,33 @@ alias restart="systemctl restart"
 alias enable="systemctl enable"
 alias disable="systemctl disable"
 
-alias ls="ls --color=auto"
-alias ll="ls -lh"
-alias la="ls -lha"
-alias lt="ls -lt"
+# Exa Aliases (Replacing ls)
+alias ls='exa --icons'
+alias ll='exa -l --icons'                     # Long format
+alias la='exa -la --icons'                    # Long format, including hidden files
+alias lt='exa -lT --icons'                    # Tree view
+alias ltr='exa -lT --icons --reverse'         # Tree view, reversed
+alias lr='exa -l --reverse --icons'           # Long format, reversed
+alias l1='exa -1 --icons'                     # One file per line
+alias ld='exa -ld --icons */'                 # List directories only
+alias lg='exa -l --git --icons'               # Show Git metadata
+alias lf='exa -l --icons | grep'              # List files and grep results
+alias lsd='exa -D --icons'                    # Only show directories
+
+# bat Aliases (Replacing cat)
+alias cat='bat --paging=never'      # Default replacement for cat
+alias catn='bat --number'           # Mimic `cat -n` (show line numbers)
+alias catp='bat --plain'            # Plain output, no syntax highlighting
+alias catt='bat --theme="GitHub"'   # Use GitHub theme for consistency
+# Colorize output if exa supports i
+# diff-so-fancy Aliases (Replacing diff)
+alias diff='diff --color=auto | diff-so-fancy'  # Default replacement
+alias diffs='diff --color=auto | diff-so-fancy | less -R'  # Scrollable output
+alias gdiff='git diff --color=always | diff-so-fancy'  # Improve Git diffs
+alias gdiffs='git diff --color=always | diff-so-fancy | less -R'  # Scrollable Git diff
+#
+# t
+alias ls='exa --icons --color=auto'
 alias ..="cd .."
 alias ...="cd ../.."
 alias ~="cd ~"
@@ -151,3 +174,116 @@ fi
 if command -v htop &>/dev/null; then
     alias top='htop'
 fi
+
+# =============================================================================
+#
+# Utility functions for zoxide.
+#
+
+# pwd based on the value of _ZO_RESOLVE_SYMLINKS.
+function __zoxide_pwd() {
+    \builtin pwd -L
+}
+
+# cd + custom logic based on the value of _ZO_ECHO.
+function __zoxide_cd() {
+    # shellcheck disable=SC2164
+    \builtin cd -- "$@"
+}
+
+# =============================================================================
+#
+# Hook configuration for zoxide.
+#
+
+# Hook to add new entries to the database.
+function __zoxide_hook() {
+    # shellcheck disable=SC2312
+    \command zoxide add -- "$(__zoxide_pwd)"
+}
+
+# Initialize hook.
+# shellcheck disable=SC2154
+if [[ ${precmd_functions[(Ie)__zoxide_hook]:-} -eq 0 ]] && [[ ${chpwd_functions[(Ie)__zoxide_hook]:-} -eq 0 ]]; then
+    chpwd_functions+=(__zoxide_hook)
+fi
+
+# =============================================================================
+#
+# When using zoxide with --no-cmd, alias these internal functions as desired.
+#
+# Jump to a directory using only keywords.
+function __zoxide_z() {
+    # shellcheck disable=SC2199
+    if [[ "$#" -eq 0 ]]; then
+        __zoxide_cd ~
+    elif [[ "$#" -eq 1 ]] && { [[ -d "$1" ]] || [[ "$1" = '-' ]] || [[ "$1" =~ ^[-+][0-9]$ ]]; }; then
+        __zoxide_cd "$1"
+    else
+        \builtin local result
+        # shellcheck disable=SC2312
+        result="$(\command zoxide query --exclude "$(__zoxide_pwd)" -- "$@")" && __zoxide_cd "${result}"
+    fi
+}
+
+# Jump to a directory using interactive search.
+function __zoxide_zi() {
+    \builtin local result
+    result="$(\command zoxide query --interactive -- "$@")" && __zoxide_cd "${result}"
+}
+
+# =============================================================================
+#
+# Commands for zoxide. Disable these using --no-cmd.
+#
+
+function z() {
+    __zoxide_z "$@"
+}
+
+function zi() {
+    __zoxide_zi "$@"
+}
+
+# Completions.
+if [[ -o zle ]]; then
+    __zoxide_result=''
+
+    function __zoxide_z_complete() {
+        # Only show completions when the cursor is at the end of the line.
+        # shellcheck disable=SC2154
+        [[ "${#words[@]}" -eq "${CURRENT}" ]] || return 0
+
+        if [[ "${#words[@]}" -eq 2 ]]; then
+            # Show completions for local directories.
+            _files -/
+        elif [[ "${words[-1]}" == '' ]]; then
+            # Show completions for Space-Tab.
+            # shellcheck disable=SC2086
+            __zoxide_result="$(\command zoxide query --exclude "$(__zoxide_pwd || \builtin true)" --interactive -- ${words[2,-1]})" || __zoxide_result=''
+
+            # Bind '\e[0n' to helper function.
+            \builtin bindkey '\e[0n' '__zoxide_z_complete_helper'
+            # Send '\e[0n' to console input.
+            \builtin printf '\e[5n'
+        fi
+                                                                                                                # Report that the completion was successful, so that we don't fall back
+        # to another completion function.
+        return 0
+    }
+
+    function __zoxide_z_complete_helper() {
+        if [[ -n "${__zoxide_result}" ]]; then
+            # shellcheck disable=SC2034,SC2296
+            BUFFER="z ${(q-)__zoxide_result}"
+            \builtin zle reset-prompt
+            \builtin zle accept-line
+        else
+            \builtin zle reset-prompt
+        fi
+    }
+    \builtin zle -N __zoxide_z_complete_helper
+
+    [[ "${+functions[compdef]}" -ne 0 ]] && \compdef __zoxide_z_complete z
+fi
+
