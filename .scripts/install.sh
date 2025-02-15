@@ -52,7 +52,7 @@ APPS_DNF=(
     "fastfetch" "zsh-autosuggestions" "zsh-syntax-highlighting" "docker" "docker-compose"
     "podman" "gh" "rsync" "tmux" "tldr" "jq" "yq" "tree" "bat" "ripgrep" "fd" "mpv"
     "virt-manager" "qemu" "libvirt" "ffmpeg" "thefuck" "scc" "exa" "grex" "navi"
-    "git-extras" "progress"
+    "git-extras" "progress", "vencord"
 )
 
 APPS_YAY=(
@@ -61,7 +61,7 @@ APPS_YAY=(
     "gh" "rsync" "tmux" "tldr" "jq" "yq" "tree" "bat" "ripgrep" "fd" "mpv"
     "virt-manager" "qemu" "libvirt" "ffmpeg" "thefuck" "scc" "exa" "grex" "navi"
     "git-extras" "progress" "google-chrome" "obsidian" "1password" "ghostty"
-    "lazyvim" "lazydocker"
+    "lazyvim" "lazydocker", "vencord"
 )
 
 APPS_FLATPAK=(

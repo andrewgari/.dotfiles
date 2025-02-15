@@ -67,3 +67,4 @@ if command -v source-highlight &>/dev/null; then
 fi
 
 fastfetch
+
