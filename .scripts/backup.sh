@@ -43,12 +43,12 @@ push_snapshots_to_unraid() {
     HOSTNAME=$(hostname)
     
     LOCAL_PATH="/home/andrewgari/backups/snapshots/$HOSTNAME/"
-    NFS_PATH="/mnt/nfs_shares/vault/backup/snapshots/$HOSTNAME"
+    NFS_PATH="/mnt/unraid/vault/backup/snapshots/$HOSTNAME"
 
     # Ensure the NFS share is mounted
-    if ! mount | grep -q "/mnt/nfs_shares/vault"; then
+    if ! mount | grep -q "/mnt/unraid/vault"; then
         echo "NFS share is not mounted! Attempting to mount..."
-        sudo mount -t nfs 192.168.50.3:/mnt/user/vault /mnt/nfs_shares/vault
+        sudo mount -t nfs 192.168.50.3:/mnt/user/vault /mnt/unraid/vault
     fi
 
     # Ensure the NFS backup directory exists

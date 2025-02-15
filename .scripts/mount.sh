@@ -2,29 +2,30 @@
 
 set -e  # Exit on error
 
-setup_nfs_shares() {
+setup_unraid() {
     echo "Setting up NFS shares using systemd..."
-    sudo mkdir -p /mnt/nfs_shares/{data,foundryvtt,vault,andrew,shared}
+    sudo mkdir -p /mnt/unraid/{data,foundryvtt,vault,andrew,shared}
     
     for share in data foundryvtt vault andrew shared; do
-        MOUNT_UNIT="/etc/systemd/system/mnt-nfs_shares-${share}.mount"
+        MOUNT_UNIT="/etc/systemd/system/mnt-unraid-${share}.mount"
         echo "Creating systemd mount unit for $share..."
         sudo bash -c "cat > $MOUNT_UNIT" <<EOF
 [Unit]
 Description=NFS mount for $share
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Mount]
 What=192.168.50.3:/mnt/user/$share
-Where=/mnt/nfs_shares/$share
+Where=/mnt/unraid/$share
 Type=nfs
-Options=defaults
+Options=defaults,noatime,nofailt,_netdev,x-systemd.automount
 
 [Install]
 WantedBy=multi-user.target
 EOF
         sudo systemctl daemon-reload
-        sudo systemctl enable --now mnt-nfs_shares-${share}.mount
+        sudo systemctl enable --now mnt-unraid-${share}.mount
     done
 }
 
@@ -36,11 +37,11 @@ setup_hardlinks() {
 
     # Define paths as associative arrays (Bash 4+)
     declare -A paths=(
-        ["~/Games/unraid"]="/mnt/nfs_shares/data/media/games"
-        ["~/Videos/unraid"]="/mnt/nfs_shares/data/media/videos"
-        ["~/Pictures/unraid"]="/mnt/nfs_shares/data/media/photos"
-        ["~/foundryvtt"]="/mnt/nfs_shares/foundryvtt"
-        ["~/Vault"]="/mnt/nfs_shares/vault"
+        ["~/Games/unraid"]="/mnt/unraid/data/media/games"
+        ["~/Videos/unraid"]="/mnt/unraid/data/media/videos"
+        ["~/Pictures/unraid"]="/mnt/unraid/data/media/photos"
+        ["~/foundryvtt"]="/mnt/unraid/foundryvtt"
+        ["~/Vault"]="/mnt/unraid/vault"
     )
 
     for target in "${!paths[@]}"; do
@@ -68,7 +69,7 @@ setup_hardlinks() {
     echo "Hardlink setup complete!"
 }
 
-setup_nfs_shares
+setup_unraid
 setup_hardlinks
 
 echo "NFS shares (systemd), hardlinks, BTRFS optimizations, and snapshots setup completed!"

@@ -58,6 +58,20 @@ alias restart="systemctl restart"
 alias enable="systemctl enable"
 alias disable="systemctl disable"
 
+alias killcpu='~/.scripts/kil_high_cpu.sh'
+alias brename='~/.scripts/bulk_rename.sh' #brename 
+alias sysmonitor='~/.scripts/sys_monitor.sh'
+alias diagnostics='~/.scripts/dignostics.sh'
+alias netdiag='~/scripts/network_diagnostics.sh'
+alias wifiscan='~/scripts/wifi_signal.sh'
+alias bigfiles='~/scripts/find_large_files.sh'
+alias screentext='~/scripts/screenshot_ocr.sh'
+alias perfbench='~/scripts/performance_benchmark.sh'
+alias autoshutdown='~/scripts/auto_shutdown.sh'
+alias termrec='~/scripts/record_terminal.sh'
+alias sysupdate='~/scripts/auto_update.sh'
+alias watchdir='~/scripts/watch_directory.sh'
+
 # Fuzzy Finder (if installed)
 if command -v fzf &>/dev/null; then
     alias fzfp="find . | fzf"
