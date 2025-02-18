@@ -285,84 +285,41 @@ alias watch_directory="$SCRIPTS_DIR/run_watch_directory.sh"
 # Ensure all scripts are executable
 chmod +x $SCRIPTS_DIR/*.sh
 
-update_dotfiles() {
-    local repo_url="git@github.com:andrewgari/.dotfiles"
-    local target_dir="$HOME/Repos/dotfiles"
-    local systemd_source="$target_dir/systemd"
-    local systemd_user_dir="$HOME/.config/systemd/user"
-    local systemd_system_dir="/etc/systemd/system"
-    local backup_dir="$HOME/backups/dotfiles_$(date +'%Y-%m-%d_%H-%M-%S')"
-    local changes=false
-
-    echo "🔄 Updating dotfiles from $repo_url..."
-
-    # Clone or update the repository
-    if [ -d "$target_dir" ]; then
-        echo "📂 Dotfiles repo already exists. Fetching latest changes..."
-        git -C "$target_dir" fetch origin && git -C "$target_dir" reset --hard origin/main
-    else
-        echo "🛠 Cloning dotfiles repository..."
-        git clone "$repo_url" "$target_dir"
-    fi
-
-    echo "📂 Checking systemd files..."
-    mkdir -p "$systemd_user_dir"
-    sudo mkdir -p "$systemd_system_dir"
-
-
-    # Check if systemd is installed
-    if ! command -v systemctl &>/dev/null; then
-        echo "⚠️ systemd is not installed. Skipping systemd file updates."
-        exit 0
-    fi
-
-    for file in "$systemd_source"/*; do
-        filename=$(basename "$file")
-
-        # Check if the system allows writing to /etc/systemd/system
-        if [ -w "$systemd_system_dir" ]; then
-            dest="$systemd_system_dir/$filename"
-        else
-            dest="$systemd_user_dir/$filename"
-        fi
-
-        if [ -f "$dest" ] && diff -q "$file" "$dest" &>/dev/null; then
-            echo "✅ $filename is up-to-date."
-        else
-            echo "📝 Updating systemd file: $filename"
-            sudo cp "$file" "$dest"
-            changes=true
-        fi
-    done
-
-    # Sync systemd files if they are different
-    echo "📂 Checking dotfiles for updates..."
-    mkdir -p "$backup_dir"
-
-    # Sync other dotfiles to home directory if they are different
-    for file in $(find "$target_dir" -mindepth 1 -maxdepth 1 ! -name "systemd" ! -name ".git" -exec basename {} \;); do
-        src="$target_dir/$file"
-        dest="$HOME/$file"
-
-        if [ -f "$dest" ] && diff -q "$src" "$dest" &>/dev/null; then
-            echo "✅ $file is up-to-date."
-        else
-            if [ -f "$dest" ]; then
-                echo "🔄 Updating: $file (backed up first)"
-                mv "$dest" "$backup_dir/"
-            else
-                echo "📄 Copying new file: $file"
-            fi
-            cp -r "$src" "$dest"
-            changes=true
-        fi
-    done
-
-    if [ "$changes" = true ]; then
-        echo "✅ Dotfiles update complete! Systemd reloaded."
-        systemctl --user daemon-reload
-        sudo systemctl daemon-reload
-    else
-        echo "✔ Everything is already up-to-date!"
-    fi
+dotfiles-sync() {
+    echo "🔄 Running dotfiles sync..."
+    "$SCRIPTS_DIR/run_dotfiles_sync.sh"
+    source ~/.zshrc
 }
+
+dotfiles-upload() {
+    echo "🚀 Uploading local dotfiles to repo..."
+    "$SCRIPTS_DIR/run_dotfiles_upload.sh"
+    source ~/.zshrc
+}
+
+dotfiles-download() {
+    echo "📥 Downloading dotfiles from remote repo..."
+    "$SCRIPTS_DIR/run_dotfiles_download.sh"
+    source ~/.zshrc
+}
+
+dotfiles-add() {
+    if [ -z "$1" ]; then
+        echo "⚠️ Usage: dotfiles-add <file>"
+        return 1
+    fi
+    echo "➕ Adding $1 to dotfiles repo..."
+    "$SCRIPTS_DIR/run_dotfiles_add.sh" "$1"
+    source ~/.zshrc
+}
+
+dotfiles-remove() {
+    if [ -z "$1" ]; then
+        echo "⚠️ Usage: dotfiles-remove <file>"
+        return 1
+    fi
+    echo "❌ Removing $1 from dotfiles repo..."
+    "$SCRIPTS_DIR/run_dotfiles_remove.sh" "$1"
+    source ~/.zshrc
+}
+

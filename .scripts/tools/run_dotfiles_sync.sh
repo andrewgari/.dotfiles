@@ -1,59 +1,72 @@
 #!/bin/bash
 
-# Script to sync dotfiles between local and remote repository
+# Live script to sync dotfiles between local and remote repository
 DOTFILES_REPO=git@github.com:andrewgari/.dotfiles
 DOTFILES_DIR=~/Repos/dotfiles
-BACKUP_DIR=~/backups/dotfiles
+BACKUP_BASE_DIR=~/backups/dotfiles
+TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+BACKUP_DIR="$BACKUP_BASE_DIR-$TIMESTAMP"
+
+echo "🚀 Starting dotfiles sync..."
 
 # Clone the repository if it doesn't exist
+echo "🔍 Checking if repository exists..."
 if [ ! -d "$DOTFILES_DIR/.git" ]; then
     echo "📥 Cloning dotfiles repository..."
     git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
+else
+    echo "✅ Repository already exists."
 fi
 
-# Backup existing home dotfiles that are tracked in the repository
-mkdir -p "$BACKUP_DIR"
+# Fetch and pull latest changes
+echo "🔄 Fetching latest changes from remote repository..."
 cd "$DOTFILES_DIR"
-for file in $(find . -type f -not -path "./systemd/*"); do
-    home_file="$HOME/${file#./}"
-    backup_file="$BACKUP_DIR/${file#./}"
+git fetch --all
+git pull origin main || {
+    echo "⚠️ Merge conflicts detected. Launching interactive resolution..."
+    git mergetool
+    git rebase --continue
+}
+
+# Backup existing home dotfiles before updating
+echo "💾 Backing up existing home dotfiles to $BACKUP_DIR..."
+mkdir -p "$BACKUP_DIR"
+for file in $(git ls-files | grep -v '^systemd/'); do
+    home_file="$HOME/$file"
+    backup_file="$BACKUP_DIR/$file"
     
     if [ -f "$home_file" ]; then
         mkdir -p "$(dirname "$backup_file")"
-        cp "$home_file" "$backup_file"
-        echo "💾 Backed up existing home file: $home_file to $backup_file"
+        rsync -a "$home_file" "$backup_file"
+        echo "💾 Backed up: $home_file -> $backup_file"
     fi
 done
 
-# Copy local changes from home to repo directory
-for file in $(find "$HOME" -type f -path "$HOME/.*" -not -path "$HOME/Repos/*"); do
-    repo_file="$DOTFILES_DIR/${file#$HOME/}"
-    mkdir -p "$(dirname "$repo_file")"
-    cp "$file" "$repo_file"
-    echo "🔄 Copied $file to repo directory."
+# Keep only the latest 10 backups
+BACKUP_COUNT=$(ls -d $BACKUP_BASE_DIR-* 2>/dev/null | wc -l)
+if [ "$BACKUP_COUNT" -gt 10 ]; then
+    echo "🗑 Keeping only the latest 10 backups, deleting older ones..."
+    ls -d $BACKUP_BASE_DIR-* 2>/dev/null | sort | head -n -10 | xargs rm -rf
+fi
+
+# Sync only tracked files from home to repo
+echo "🔄 Copying tracked files from home to repo directory..."
+for file in $(git ls-files | grep -v '^systemd/'); do
+    home_file="$HOME/$file"
+    repo_file="$DOTFILES_DIR/$file"
+    
+    if [ -f "$home_file" ]; then
+        mkdir -p "$(dirname "$repo_file")"
+        rsync -a "$home_file" "$repo_file"
+        echo "🔄 Updated: $home_file -> $repo_file"
+    fi
 done
 
-# Pull latest changes and rebase
-echo "🔄 Fetching and rebasing latest dotfiles updates..."
-cd "$DOTFILES_DIR"
-git fetch --all
-git rebase origin/main || {
-    echo "⚠️ Merge conflicts detected. Please resolve manually."
-    exit 1
-}
-
+# Stage, commit, and push changes
+echo "📝 Staging all changes in dotfiles repository..."
 git add .
-git commit -m "Syncing dotfiles" --allow-empty
-
+git commit -m "🔄 Automated sync of dotfiles" --allow-empty
 git push origin main
-
-# Copy latest files from repo to home (excluding systemd)
-for file in $(find . -type f -not -path "./systemd/*"); do
-    dest="$HOME/${file#./}"
-    mkdir -p "$(dirname "$dest")"
-    cp "$file" "$dest"
-    echo "✅ Updated $dest"
-done
 
 echo "🎉 Dotfiles sync complete!"
 
