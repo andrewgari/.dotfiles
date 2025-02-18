@@ -1,3 +1,6 @@
+alias zshrc='nvim ~/.zshrc && source ~/.zshrc'
+alias aliases='nvim ~/.aliases && source ~/.zshrc'
+
 # -------------------
 # 🔹 SYSTEM UTILITIES
 # -------------------
@@ -7,6 +10,10 @@ alias meminfo="free -h"  # Show available RAM
 alias processes="ps aux --sort=-%cpu | head -15"  # Show top CPU-consuming processes
 alias reboot_now="sudo systemctl reboot"  # Quick reboot
 alias shutdown_now="sudo systemctl poweroff"  # Quick shutdown
+
+alias trash='mv --force -t ~/.local/share/Trash '
+alias print='echo'
+
 # Bat (better `cat` replacement)
 if command -v bat &>/dev/null; then
     alias cat='bat --style=plain'
@@ -133,6 +140,7 @@ if command -v exa &>/dev/null; then
     alias ls='exa --icons'
     alias ll='exa -l --icons'                      # Long format
     alias la='exa -la --icons'                     # Long format, including hidden files
+    alias list='exa -la --icons'
     alias lt='exa -lT --icons'                     # Tree view
     alias ltr='exa -lT --icons --reverse'          # Tree view, reversed
     alias lr='exa -l --reverse --icons'            # Long format, reversed
@@ -147,14 +155,15 @@ fi
 # 🔹 GIT SHORTCUTS
 # -------------------
 
+alias g="git"
 alias gs="git status"
 alias ga="git add ."
 alias gc="git commit -m"
-alias gp="git push"
+alias gp="git push -u origin"
 alias gl="git log --oneline --graph --decorate --all"
 alias gd="git diff"
-alias gco="git checkout"
-alias gpull="git pull origin main"
+alias gco="git switch"
+alias gpull="git pull origin"
 
 # -------------------
 # 🔹 DOCKER & SYSTEMD
