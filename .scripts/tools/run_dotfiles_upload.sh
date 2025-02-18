@@ -62,11 +62,23 @@ for file in $(git ls-files | grep -v '^systemd/'); do
     fi
 done
 
-# Stage, commit, and push changes
-echo "📝 Staging all changes in dotfiles repository..."
-git add .
-git commit -m "🔄 Automated push of local dotfiles"
-git push origin main
+# Stage, check for changes, and commit
+if git diff --cached --quiet; then
+    echo "✅ No changes to commit."
+else
+    LAST_COMMIT_MSG=$(git log -1 --pretty=%s)
+    CHANGED_FILES=$(git diff --cached --name-only | sed 's/^/- /')
+    if [[ "$LAST_COMMIT_MSG" =~ ^🔄\ Automated\ sync\ of\ dotfiles ]]; then
+        echo "🔄 Amending last commit..."
+        git commit --amend -m "🔄 Automated push of dotfiles
+
+Changed files:\n$CHANGED_FILES"
+    else
+        echo "📝 Creating a new commit..."
+        git commit -m "🔄 Automated sync of dotfiles\n\nChanged files:\n$CHANGED_FILES"
+    fi
+    git push origin main
+fi
 
 echo "🎉 Dotfiles push complete!"
 
