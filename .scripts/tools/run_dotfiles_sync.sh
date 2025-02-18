@@ -1,85 +1,109 @@
 #!/bin/bash
 
-# Live script to sync dotfiles between local and remote repository
-DOTFILES_REPO=git@github.com:andrewgari/.dotfiles
-DOTFILES_DIR=~/Repos/dotfiles
-BACKUP_BASE_DIR=~/backups/dotfiles
+# Set paths
+DOTFILES_REPO="$HOME/Repos/dotfiles"
+BACKUP_DIR="$HOME/backups/dotfiles"
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-BACKUP_DIR="$BACKUP_BASE_DIR-$TIMESTAMP"
+BACKUP_FILE="$BACKUP_DIR/dotfiles-backup-$TIMESTAMP.tar.gz"
+DRY_RUN=false
 
-echo "🚀 Starting dotfiles sync..."
-
-# Clone the repository if it doesn't exist
-echo "🔍 Checking if repository exists..."
-if [ ! -d "$DOTFILES_DIR/.git" ]; then
-    echo "📥 Cloning dotfiles repository..."
-    git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
-else
-    echo "✅ Repository already exists."
+# Parse arguments
+if [[ "$1" == "--dry-run" ]]; then
+    DRY_RUN=true
+    echo "🟡 Running in dry-run mode (no changes will be made)."
 fi
 
-# Fetch and pull latest changes
-echo "🔄 Fetching latest changes from remote repository..."
-cd "$DOTFILES_DIR"
-git fetch --all
-git pull origin main || {
-    echo "⚠️ Merge conflicts detected. Launching interactive resolution..."
-    git mergetool
-    git rebase --continue
-}
-
-# Backup existing home dotfiles before updating
-echo "💾 Backing up existing home dotfiles to $BACKUP_DIR..."
+# Ensure backup directory exists
 mkdir -p "$BACKUP_DIR"
-for file in $(git ls-files | grep -v '^systemd/'); do
-    home_file="$HOME/$file"
-    backup_file="$BACKUP_DIR/$file"
-    
-    if [ -f "$home_file" ]; then
-        mkdir -p "$(dirname "$backup_file")"
-        rsync -a "$home_file" "$backup_file"
-        echo "💾 Backed up: $home_file -> $backup_file"
-    fi
-done
 
-# Keep only the latest 10 backups
-BACKUP_COUNT=$(ls -d $BACKUP_BASE_DIR-* 2>/dev/null | wc -l)
-if [ "$BACKUP_COUNT" -gt 10 ]; then
-    echo "🗑 Keeping only the latest 10 backups, deleting older ones..."
-    ls -d $BACKUP_BASE_DIR-* 2>/dev/null | sort | head -n -10 | xargs rm -rf
+# Check if repo exists
+if [ ! -d "$DOTFILES_REPO/.git" ]; then
+    echo "📂 Dotfiles repository not found. Cloning fresh..."
+    rm -rf "$DOTFILES_REPO"  # Ensure a clean state
+    git clone --depth=1 git@github.com:andrewgari/.dotfiles "$DOTFILES_REPO"
+else
+    echo "✅ Dotfiles repository found. Fetching latest changes..."
+    git -C "$DOTFILES_REPO" fetch --all
+    echo "⚠️ Force pulling latest changes (resetting local changes)..."
+    git -C "$DOTFILES_REPO" reset --hard origin/main
+    git -C "$DOTFILES_REPO" clean -fd
 fi
 
-# Sync only tracked files from home to repo
-echo "🔄 Copying tracked files from home to repo directory..."
-for file in $(git ls-files | grep -v '^systemd/'); do
+# Backup tracked home dotfiles before applying repo changes
+if [ "$DRY_RUN" = false ]; then
+    valid_files=""
+    for file in $(git -C "$DOTFILES_REPO" ls-files); do
+        if [ -f "$HOME/$file" ]; then
+            valid_files="$valid_files $file"
+        fi
+    done
+
+    if [ -n "$valid_files" ]; then
+        tar -czf "$BACKUP_FILE" -C "$HOME" $valid_files
+        printf "✅ Backup saved at: %s\n" "$BACKUP_FILE"
+    else
+        echo "⚠️ No valid files to back up."
+    fi
+else
+    echo "🟡 [Dry Run] Would backup tracked files."
+fi
+
+# Sync repo → home (overwrite always)
+echo -e "\n🔄 Syncing dotfiles from repo to home..."
+if [ "$DRY_RUN" = true ]; then
+    printf "🟡 [Dry Run] Would sync repo to home (without deletion): %-60s → %s\n" "$DOTFILES_REPO/" "$HOME/"
+else
+    rsync -a --update --exclude ".git" "$DOTFILES_REPO/" "$HOME/"
+    printf "✅ Synced repo to home safely (only updating older files).\n"
+fi
+
+# Sync home → repo (only if home file is newer)
+echo -e "\n🔄 Syncing tracked files from home to repo..."
+file_list=($(git -C "$DOTFILES_REPO" ls-files))
+
+for file in "${file_list[@]}"; do
     home_file="$HOME/$file"
-    repo_file="$DOTFILES_DIR/$file"
-    
+    repo_file="$DOTFILES_REPO/$file"
+
     if [ -f "$home_file" ]; then
         mkdir -p "$(dirname "$repo_file")"
-        rsync -a "$home_file" "$repo_file"
-        echo "🔄 Updated: $home_file -> $repo_file"
+
+        # Compare timestamps to avoid overwriting newer files in the repo
+        if [ "$home_file" -nt "$repo_file" ]; then
+            if [ "$DRY_RUN" = true ]; then
+                printf "🟡 [Dry Run] Would sync: %-60s → %s\n" "$home_file" "$repo_file"
+            else
+                rsync -a "$home_file" "$repo_file"
+                printf "✅ Synced: %-60s → %s\n" "$home_file" "$repo_file"
+            fi
+        fi
     fi
 done
 
-# Stage, check for changes, and commit
-if git diff --cached --quiet; then
-    echo "✅ No changes to commit."
+# Stage, commit, and push changes
+echo -e "\n📝 Staging and committing changes..."
+if [ "$DRY_RUN" = true ]; then
+    printf "🟡 [Dry Run] Would stage changes in repo.\n"
 else
-    LAST_COMMIT_MSG=$(git log -1 --pretty=%s)
-    CHANGED_FILES=$(git diff --cached --name-only | sed 's/^/- /')
-    if [[ "$LAST_COMMIT_MSG" =~ ^🔄\ Automated\ sync\ of\ dotfiles ]]; then
-        echo "🔄 Amending last commit..."
-        git commit --amend -m "🔄 Automated sync of dotfiles
-
-Changed files:\n$CHANGED_FILES"
-    else
-        echo "📝 Creating a new commit..."
-        git commit -m "🔄 Automated sync of dotfiles\n\nChanged files:\n$CHANGED_FILES"
-    fi
-    git push origin main
+    git -C "$DOTFILES_REPO" add .
 fi
 
-echo "🎉 Dotfiles sync complete!"
+if git -C "$DOTFILES_REPO" diff --cached --quiet; then
+    echo "✅ No changes to commit."
+else
+    CHANGED_FILES=$(git -C "$DOTFILES_REPO" diff --cached --name-only | sed 's/^/- /')
+    COMMIT_MSG="🔄 Automated sync of dotfiles"
+    
+    if [ "$DRY_RUN" = true ]; then
+        printf "🟡 [Dry Run] Would commit changes: %s\n" "$COMMIT_MSG"
+    else
+        git -C "$DOTFILES_REPO" commit -m "$COMMIT_MSG"
+        git -C "$DOTFILES_REPO" push origin main
+        printf "✅ Committed and pushed changes.\n"
+    fi
+fi
 
-
+echo -e "\n🎉 Dotfiles sync complete!"
+if [ "$DRY_RUN" = true ]; then
+    echo "🟡 Dry-run mode: No changes were actually made."
+fi

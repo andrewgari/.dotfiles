@@ -1,9 +1,10 @@
-#!/bin/zsh
+#!/bin/bash
 
-# Configuration
-DOTFILES_REPO=git@github.com:andrewgari/.dotfiles
-DOTFILES_DIR=~/Repos/dotfiles
-SCRIPTS_DIR="$HOME/.scripts"  # Directory to always sync
+# Set paths
+DOTFILES_REPO="$HOME/Repos/dotfiles"
+BACKUP_DIR="$HOME/backups/dotfiles"
+TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+BACKUP_FILE="$BACKUP_DIR/dotfiles-backup-$TIMESTAMP.tar.gz"
 DRY_RUN=false
 
 # Parse arguments
@@ -12,109 +13,88 @@ if [[ "$1" == "--dry-run" ]]; then
     echo "🟡 Running in dry-run mode (no changes will be made)."
 fi
 
-# Function to display a progress bar
-progress_bar() {
-    local total=$1
-    local current=$2
-    local width=40  # Width of the progress bar
+# Ensure backup directory exists
+mkdir -p "$BACKUP_DIR"
 
-    local progress=$(( current * width / total ))
-    local remaining=$(( width - progress ))
-
-    printf "\r["
-    printf "%0.s#" $(seq 1 $progress)  # Filled part
-    printf "%0.s-" $(seq 1 $remaining)  # Empty part
-    printf "] %d%% - Processing: %s" $(( current * 100 / total )) "$3"
-}
-
-# Ensure the dotfiles repo exists
-if [ ! -d "$DOTFILES_DIR/.git" ]; then
-    echo "📥 Cloning dotfiles repository..."
-    git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
+# Ensure dotfiles repo exists
+if [ ! -d "$DOTFILES_REPO/.git" ]; then
+    echo "📂 Dotfiles repository not found. Cloning fresh..."
+    rm -rf "$DOTFILES_REPO"  # Ensure a clean state
+    git clone --depth=1 --quiet git@github.com:andrewgari/.dotfiles "$DOTFILES_REPO"
 else
-    cd "$DOTFILES_DIR" || exit
+    echo "✅ Dotfiles repository found. Fetching latest changes..."
+    git -C "$DOTFILES_REPO" fetch --all --quiet
+    echo "⚠️ Force pulling latest changes (resetting local changes)..."
+    git -C "$DOTFILES_REPO" reset --hard origin/main --quiet
+    git -C "$DOTFILES_REPO" clean -fd --quiet
+fi
 
-    # Stash changes before pulling (only if there are unstaged modifications)
-    if ! git diff --quiet || ! git diff --cached --quiet; then
-        git stash push -m "Auto-stash before pull ($(date +'%Y-%m-%d %H:%M:%S'))" > /dev/null
-    fi
+# Backup existing dotfiles in home before adding new ones
+echo "📦 Creating backup of current tracked dotfiles before adding..."
+tracked_files=$(git -C "$DOTFILES_REPO" ls-files)
 
-    git pull --rebase > /dev/null
+if [ "$DRY_RUN" = true ]; then
+    printf "🟡 [Dry Run] Would backup home files to: %s\n" "$BACKUP_FILE"
+else
+    tar -czf "$BACKUP_FILE" -C "$HOME" $tracked_files
+    printf "✅ Backup saved at: %s\n" "$BACKUP_FILE"
+fi
 
-    # Restore stashed changes if there are any
-    if git stash list | grep -q "Auto-stash before pull"; then
-        git stash apply > /dev/null || { echo "⚠️ Merge conflicts detected, resolve manually!"; exit 1; }
-        git stash drop > /dev/null
+# Keep only the last 10 backups
+BACKUP_COUNT=$(ls -t "$BACKUP_DIR"/dotfiles-backup-* 2>/dev/null | wc -l)
+if [ "$BACKUP_COUNT" -gt 10 ]; then
+    echo "🗑 Keeping only the latest 10 backups, deleting older ones..."
+    if [ "$DRY_RUN" = true ]; then
+        ls -t "$BACKUP_DIR"/dotfiles-backup-* 2>/dev/null | tail -n +11 | xargs -I {} echo "🟡 [Dry Run] Would delete: {}"
+    else
+        ls -t "$BACKUP_DIR"/dotfiles-backup-* 2>/dev/null | tail -n +11 | xargs rm -rf
     fi
 fi
 
-# Get file count for progress bar
-file_list=($(git -C "$DOTFILES_DIR" ls-files -z | tr '\0' '\n'))
-total_files=${#file_list[@]}
-current_file=0
-
-# Process tracked files
-for file in "${file_list[@]}"; do
+# Add new files to the repo
+echo -e "\n➕ Adding new dotfiles to the repo..."
+while IFS= read -r file; do
     home_file="$HOME/$file"
-    repo_file="$DOTFILES_DIR/$file"
+    repo_file="$DOTFILES_REPO/$file"
 
-    ((current_file++))
-    progress_bar "$total_files" "$current_file" "$file"
-
-    if [ -f "$home_file" ] && ! diff -q "$home_file" "$repo_file" >/dev/null 2>&1; then
+    if [ -f "$home_file" ]; then
+        mkdir -p "$(dirname "$repo_file")"
+        
         if [ "$DRY_RUN" = true ]; then
-            echo -e "\n🟡 [Dry Run] Would update: $file"
+            printf "🟡 [Dry Run] Would add: %-60s → %s\n" "$home_file" "$repo_file"
         else
-            rsync -avu "$home_file" "$repo_file" > /dev/null
-            git -C "$DOTFILES_DIR" add "$file"
+            cp "$home_file" "$repo_file"
+            printf "✅ Added: %-60s → %s\n" "$home_file" "$repo_file"
         fi
+    else
+        echo "⚠️ Skipping: $home_file (does not exist)"
     fi
-done
+done <<< "$(git -C "$DOTFILES_REPO" ls-files --others --exclude-standard)"
 
-# Sync .scripts directory
-script_files=($(find "$SCRIPTS_DIR" -type f))
-total_scripts=${#script_files[@]}
-current_script=0
+# Stage, commit, and push changes
+echo -e "\n📝 Staging and committing changes..."
+if [ "$DRY_RUN" = true ]; then
+    printf "🟡 [Dry Run] Would stage changes in repo.\n"
+else
+    git -C "$DOTFILES_REPO" add .
+fi
 
-for script in "${script_files[@]}"; do
-    repo_script="$DOTFILES_DIR/.scripts/${script#$SCRIPTS_DIR/}"
-
-    ((current_script++))
-    progress_bar "$total_scripts" "$current_script" "$script"
+if git -C "$DOTFILES_REPO" diff --cached --quiet; then
+    echo "✅ No changes to commit."
+else
+    CHANGED_FILES=$(git -C "$DOTFILES_REPO" diff --cached --name-only | sed 's/^/- /')
+    COMMIT_MSG="➕ Automated addition of new dotfiles\n\nNew files:\n$CHANGED_FILES"
 
     if [ "$DRY_RUN" = true ]; then
-        echo -e "\n🟡 [Dry Run] Would sync: $script"
+        printf "🟡 [Dry Run] Would commit changes: %s\n" "$COMMIT_MSG"
     else
-        rsync -avu "$script" "$repo_script" > /dev/null
-        git -C "$DOTFILES_DIR" add "$repo_script"
+        git -C "$DOTFILES_REPO" commit -m "$COMMIT_MSG" --quiet
+        git -C "$DOTFILES_REPO" push origin main --quiet
+        printf "✅ Committed and pushed changes.\n"
     fi
-done
+fi
 
-# Remove stale .scripts files
-repo_scripts=($(git -C "$DOTFILES_DIR" ls-files ".scripts" -z | tr '\0' '\n'))
-total_repo_scripts=${#repo_scripts[@]}
-current_repo_script=0
-
-for repo_file in "${repo_scripts[@]}"; do
-    local_file="$SCRIPTS_DIR/${repo_file#".scripts/"}"
-
-    ((current_repo_script++))
-    progress_bar "$total_repo_scripts" "$current_repo_script" "$repo_file"
-
-    if [ ! -e "$local_file" ]; then
-        if [ "$DRY_RUN" = true ]; then
-            echo -e "\n🟡 [Dry Run] Would remove: $repo_file"
-        else
-            git -C "$DOTFILES_DIR" rm --cached "$repo_file" > /dev/null
-            rm -f "$DOTFILES_DIR/$repo_file"
-        fi
-    fi
-done
-
-# Move to new line after progress bar completion
-echo ""
-
-echo "✅ Dotfiles sync complete. Staged new and updated files, removed stale ones, but did not commit."
+echo -e "\n🎉 Dotfiles add complete!"
 if [ "$DRY_RUN" = true ]; then
     echo "🟡 Dry-run mode: No changes were actually made."
 fi

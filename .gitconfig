@@ -3,7 +3,35 @@
 	email = covadax.ag@gmail.com
 [core]
 	editor = nvim
+	pager = delta --dark --syntax-theme=Monokai
 [credential]
 	helper = store
 [init]
 	defaultBranch = main
+[credential "https://github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
+[push]
+	default = current
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	navigate = true
+	line-numbers = true
+[alias]
+	fuck = reset --soft HEAD~1
+	ohfuck = checkout .
+	fuckoff = stash push -m 'WIP'
+	unfuck = stash pop
+	fuckit = commit -am 'Fix shit'
+	nope = revert HEAD
+	fix = !~/.scripts/git-fix.sh
+	time-travel = !~/.scripts/git-time-travel.sh
+	clone-setup = !~/.scripts/git-clone-setup.sh
+	cleanup = !~/.scripts/git-cleanup.sh
+	what-if = !~/.scripts/git-what-if.sh
+	issue = !~/.scripts/gh-issue.sh
+	push-rebase = !~/.scripts/git-push-rebase.sh

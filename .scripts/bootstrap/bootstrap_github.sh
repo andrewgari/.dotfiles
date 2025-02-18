@@ -11,6 +11,7 @@ KEY_FILE="$KEY_DIR/github_rsa"
 
 configure_git() {
     echo "Configuring Git..."
+    git config --global url."git@github.com:".insteadOf "https://github.com/"
     git config --global user.name "$GITHUB_USERNAME"
     git config --global user.email "$GITHUB_EMAIL"
     git config --global core.editor "nvim"
@@ -43,8 +44,100 @@ configure_git() {
     git config --global alias.sdrop 'stash drop'
     git config --global alias.ssave 'stash push -m'
     git config --global alias.patch "diff --staged > patch.diff"
-    git config --global alias.apply-patch "apply patch.diff"
+    git config --global alias.apply-patch "apply patch.diff"    
+    git config --global alias.fuck-hard "reset --hard HEAD~1"
+    git config --global alias.fuck "reset --soft HEAD~1"
+
+    git config --global alias.ohfuck "checkout ."
+    git config --global alias.fuckoff "stash push -m 'WIP'"
+    git config --global alias.unfuck "stash pop"
+    git config --global alias.fuckit "commit -am 'Fix shit'"
+    git config --global alias.nope "revert HEAD"
+
+    git config --global alias.fix '!~/.scripts/git-fix.sh'
+    git config --global alias.time-travel '!~/.scripts/git-time-travel.sh'
+    git config --global alias.clone-setup '!~/.scripts/git-clone-setup.sh'
+    git config --global alias.cleanup '!~/.scripts/git-cleanup.sh'
+    git config --global alias.what-if '!~/.scripts/git-what-if.sh'
+    git config --global alias.issue '!~/.scripts/gh-issue.sh'
+    git config --global alias.push-rebase '!~/.scripts/git-push-rebase.sh'
+
+
+    echo "🔐 Enabling GPG commit signing..."
+    git config --global commit.gpgSign true
+    git config --global user.signingkey "$(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d '/' -f2 | head -n 1)"
+
+
+    # Set up global Git hooks directory
+    GIT_HOOKS_DIR="$HOME/.git-hooks"
+    mkdir -p "$GIT_HOOKS_DIR"
+
+    # Create a pre-push hook (runs before pushing)
+    cat << 'EOF' > "$GIT_HOOKS_DIR/pre-push"
+    #!/bin/bash
+    echo "🔍 Running pre-push checks..."
+
+    # Run linters (Modify this for your stack)
+    if command -v eslint &> /dev/null; then
+        echo "✅ Running ESLint..."
+        eslint .
+    elif command -v golangci-lint &> /dev/null; then
+        echo "✅ Running Go lint..."
+        golangci-lint run
+    elif command -v shellcheck &> /dev/null; then
+        echo "✅ Running ShellCheck..."
+        shellcheck **/*.sh
+    else
+        echo "⚠️  No linter found! Consider installing one."
+        exit 1
+    fi
+
+    echo "✅ Pre-push checks passed!"
+    EOF
+
+    # Make hook executable
+    chmod +x "$GIT_HOOKS_DIR/pre-push"
+
+    # Set global hooks directory
+    git config --global core.hooksPath "$GIT_HOOKS_DIR"
+    echo "✅ Global Git hooks enabled at $GIT_HOOKS_DIR"
+
+
+    cat << EOF > "$HOME/.gitignore_global"
+    # Ignore system files
+    .DS_Store
+    *.swp
+    *.swo
+    *.bak
+    *.log
+
+    # Ignore compiled files
+    *.o
+    *.out
+    *.a
+    *.so
+    *.class
+    *.jar
+
+    # Ignore package managers
+    node_modules/
+    vendor/
+    EOF
+
+    git config --global core.excludesfile "$HOME/.gitignore_global"
+    echo "✅ Global .gitignore set up."
+
+
 }
+
+create_pr_if_needed() {
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    if [ "$BRANCH" != "main" ]; then
+        echo "📢 Creating a PR for branch $BRANCH..."
+        gh pr create --title "Automated PR: $BRANCH" --body "This PR contains automated changes."
+    fi
+}
+
 
 configure_github_pat() {
     echo "Setting up GitHub PAT authentication..."
@@ -71,6 +164,29 @@ configure_github_cli() {
         fi
     fi
     gh auth login --with-token <<< "$GITHUB_PAT"
+
+    mkdir -p "$HOME/.github/workflows"
+
+    cat << EOF > "$HOME/.github/workflows/ci.yml"
+    name: CI Pipeline
+
+    on:
+      push:
+        branches:
+          - main
+
+    jobs:
+      build:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout Repository
+            uses: actions/checkout@v3
+          - name: Run Tests
+            run: make test || echo '⚠️ Tests failed'
+    EOF
+
+    echo "✅ Default GitHub Actions CI workflow added."
+
 }
 
 configure_github_copilot() {

@@ -1,146 +1,118 @@
 #!/bin/bash
 
-# Live script to push local dotfiles to the remote repository
-DOTFILES_REPO=git@github.com:andrewgari/.dotfiles
-DOTFILES_DIR=~/Repos/dotfiles
-BACKUP_BASE_DIR=~/backups/dotfiles
+# Dotfiles Upload Script
+# Syncs tracked files from home to the dotfiles repository.
+
+DOTFILES_REPO="$HOME/Repos/dotfiles"
+DOTFILES_REMOTE="git@github.com:andrewgari/.dotfiles"
+BACKUP_DIR="$HOME/backups/dotfiles"
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-BACKUP_DIR="$BACKUP_BASE_DIR-$TIMESTAMP"
 DRY_RUN=false
 
 # Parse arguments
 if [[ "$1" == "--dry-run" ]]; then
     DRY_RUN=true
-    echo "🟡 Running in dry-run mode (no changes will be made)."
+    echo -e "\n🟡 Running in dry-run mode (no changes will be made)."
 fi
 
-# Function to display a progress bar
-progress_bar() {
-    local total=$1
-    local current=$2
-    local width=40  # Width of the progress bar
+echo -e "\n🚀 Starting dotfiles upload...\n"
 
-    local progress=$(( current * width / total ))
-    local remaining=$(( width - progress ))
-
-    printf "\r["
-    printf "%0.s#" $(seq 1 $progress)  # Filled part
-    printf "%0.s-" $(seq 1 $remaining)  # Empty part
-    printf "] %d%% - Processing: %s" $(( current * 100 / total )) "$3"
-}
-
-echo "🚀 Starting dotfiles sync to remote..."
-
-# Clone the repository if it doesn't exist
-echo "🔍 Checking if repository exists..."
-if [ ! -d "$DOTFILES_DIR/.git" ]; then
-    echo "📥 Cloning dotfiles repository..."
-    git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
+# Ensure dotfiles repo exists
+if [ ! -d "$DOTFILES_REPO/.git" ]; then
+    echo "⚠️  Dotfiles repository not found. Cloning..."
+    rm -rf "$DOTFILES_REPO"
+    git clone "$DOTFILES_REMOTE" "$DOTFILES_REPO"
 else
-    echo "✅ Repository already exists."
+    echo "✅ Dotfiles repository found. Fetching latest changes..."
+    cd "$DOTFILES_REPO" || { echo "❌ Error: Could not enter repo directory."; exit 1; }
+    echo "⚠️  Force pulling latest changes (resetting local changes)..."
+    git reset --hard origin/main
+    git pull --force origin main
 fi
 
-# Fetch and pull latest changes
-echo "🔄 Fetching latest changes from remote repository..."
-cd "$DOTFILES_DIR" || exit
-git fetch --all > /dev/null
-
-if ! git pull origin main > /dev/null 2>&1; then
-    echo "⚠️ Merge conflicts detected. Launching interactive resolution..."
-    git mergetool
-    git rebase --continue
-fi
-
-# Get list of dotfiles to sync
-file_list=($(git ls-files | grep -v '^systemd/'))
-total_files=${#file_list[@]}
-current_file=0
-
-# Backup existing home dotfiles before updating
-echo "💾 Backing up existing home dotfiles to $BACKUP_DIR..."
+# Backup before syncing
 mkdir -p "$BACKUP_DIR"
+BACKUP_FILE="$BACKUP_DIR/dotfiles-backup-$TIMESTAMP.tar.gz"
+echo -e "\n💾 Creating backup of tracked dotfiles at $BACKUP_FILE..."
 
-for file in "${file_list[@]}"; do
-    ((current_file++))
-    progress_bar "$total_files" "$current_file" "$file"
-
-    home_file="$HOME/$file"
-    backup_file="$BACKUP_DIR/$file"
-
-    if [ -f "$home_file" ]; then
-        mkdir -p "$(dirname "$backup_file")"
-        if [ "$DRY_RUN" = true ]; then
-            echo -e "\n🟡 [Dry Run] Would backup: $home_file -> $backup_file"
-        else
-            rsync -a "$home_file" "$backup_file" > /dev/null
-        fi
-    fi
-done
-
-# Keep only the latest 10 backups
-BACKUP_COUNT=$(ls -d $BACKUP_BASE_DIR-* 2>/dev/null | wc -l)
-if [ "$BACKUP_COUNT" -gt 10 ]; then
-    echo "🗑 Keeping only the latest 10 backups, deleting older ones..."
-    if [ "$DRY_RUN" = true ]; then
-        ls -d $BACKUP_BASE_DIR-* 2>/dev/null | sort | head -n -10 | xargs -I {} echo "🟡 [Dry Run] Would delete: {}"
-    else
-        ls -d $BACKUP_BASE_DIR-* 2>/dev/null | sort | head -n -10 | xargs rm -rf
-    fi
+tracked_files=$(cd "$DOTFILES_REPO" && git ls-files)
+if [ -n "$tracked_files" ]; then
+    tar -czf "$BACKUP_FILE" -C "$HOME" $tracked_files || { echo "❌ Error: Backup failed!"; exit 1; }
+    echo "✅ Backup complete."
+else
+    echo "⚠️ No tracked files found to backup."
 fi
 
-# Sync home dotfiles to repo
-echo "🔄 Copying local dotfiles to repo directory..."
-current_file=0
+# 🔄 **Sync ONLY tracked dotfiles from home to repo**
+echo -e "\n🔄 Syncing tracked dotfiles from home to repo...\n"
 
-for file in "${file_list[@]}"; do
-    ((current_file++))
-    progress_bar "$total_files" "$current_file" "$file"
-
+while IFS= read -r file; do
     home_file="$HOME/$file"
-    repo_file="$DOTFILES_DIR/$file"
+    repo_file="$DOTFILES_REPO/$file"
 
-    if [ -f "$home_file" ]; then
+    if [ -f "$home_file" ] || [ -d "$home_file" ]; then
         mkdir -p "$(dirname "$repo_file")"
         if [ "$DRY_RUN" = true ]; then
-            echo -e "\n🟡 [Dry Run] Would update: $home_file -> $repo_file"
+            printf "🟡 [Dry Run] %-60s → %s\n" "$home_file" "$repo_file"
         else
-            rsync -a "$home_file" "$repo_file" > /dev/null
-            git -C "$DOTFILES_DIR" add "$repo_file"
+            cp -r --preserve=all "$home_file" "$repo_file"
+            git -C "$DOTFILES_REPO" add "$repo_file"
+            printf "✅ Synced: %-60s → %s\n" "$home_file" "$repo_file"
         fi
+    fi
+done < <(cd "$DOTFILES_REPO" && git ls-files)
+
+# 🔄 **Fix `.scripts/` Sync (No Nesting)**
+echo -e "\n🔄 Copying .scripts/ (ensuring no .scripts/.scripts/ nesting)...\n"
+
+mkdir -p "$DOTFILES_REPO/.scripts"
+
+find "$HOME/.scripts" -type f | while IFS= read -r file; do
+    relative_path="${file#$HOME/}"  # Get relative path
+    repo_file="$DOTFILES_REPO/$relative_path"
+
+    mkdir -p "$(dirname "$repo_file")"
+    
+    if [ "$DRY_RUN" = true ]; then
+        printf "🟡 [Dry Run] %-60s → %s\n" "$file" "$repo_file"
+    else
+        cp --preserve=all "$file" "$repo_file"
+        git -C "$DOTFILES_REPO" add "$repo_file"
+        printf "✅ Synced: %-60s → %s\n" "$file" "$repo_file"
     fi
 done
 
-# Stage, check for changes, and commit
-if git -C "$DOTFILES_DIR" diff --cached --quiet; then
-    echo "✅ No changes to commit."
+# Commit and push changes if any
+if git -C "$DOTFILES_REPO" diff --cached --quiet; then
+    echo -e "\n✅ No changes to commit."
 else
-    LAST_COMMIT_MSG=$(git -C "$DOTFILES_DIR" log -1 --pretty=%s)
-    CHANGED_FILES=$(git -C "$DOTFILES_DIR" diff --cached --name-only | sed 's/^/- /')
+    CHANGED_FILES=$(git -C "$DOTFILES_REPO" diff --cached --name-only | sed 's/^/- /')
+    LAST_COMMIT_MSG=$(git -C "$DOTFILES_REPO" log -1 --pretty=%s)
 
     if [[ "$LAST_COMMIT_MSG" =~ ^🔄\ Automated\ push\ of\ dotfiles ]]; then
+        echo "🔄 Amending last commit..."
         if [ "$DRY_RUN" = true ]; then
-            echo -e "\n🟡 [Dry Run] Would amend last commit."
+            echo "🟡 [Dry Run] Would amend last commit."
         else
-            git -C "$DOTFILES_DIR" commit --amend -m "🔄 Automated push of dotfiles\n\nChanged files:\n$CHANGED_FILES"
+            git -C "$DOTFILES_REPO" commit --amend -m "🔄 Automated push of dotfiles\n\nChanged files:\n$CHANGED_FILES"
         fi
     else
+        echo "📝 Creating a new commit..."
         if [ "$DRY_RUN" = true ]; then
-            echo -e "\n🟡 [Dry Run] Would create a new commit."
+            echo "🟡 [Dry Run] Would create a new commit."
         else
-            git -C "$DOTFILES_DIR" commit -m "🔄 Automated push of dotfiles\n\nChanged files:\n$CHANGED_FILES"
+            git -C "$DOTFILES_REPO" commit -m "🔄 Automated push of dotfiles\n\nChanged files:\n$CHANGED_FILES"
         fi
     fi
 
     if [ "$DRY_RUN" = true ]; then
-        echo -e "\n🟡 [Dry Run] Would push changes to remote."
+        echo "🟡 [Dry Run] Would push changes to remote."
     else
-        git -C "$DOTFILES_DIR" push origin main
+        git -C "$DOTFILES_REPO" push origin main
     fi
 fi
 
-# Move to a new line after progress bar completion
-echo ""
-echo "🎉 Dotfiles push complete."
+echo -e "\n🎉 Dotfiles upload complete!"
 if [ "$DRY_RUN" = true ]; then
     echo "🟡 Dry-run mode: No changes were actually made."
 fi

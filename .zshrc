@@ -44,12 +44,12 @@ fi
 # -----------------------------
 
 # Load global aliases (shared across systems)
-if [ -f ~/.aliases ]; then
-    source ~/.aliases
+if [ -f ~/.zsh-aliases ]; then
+    source ~/.zsh-aliases
 fi
 
-if [ -f ~/.aliases.local ]; then
-    source ~/.aliases.local
+if [ -f ~/.zsh-aliases.local ]; then
+    source ~/.zsh-aliases.local
 fi
 
 export SOFTWARE_UPDATE_AVAILABLE='📦 '
@@ -148,3 +148,11 @@ if command -v fastfetch &>/dev/null; then
     fastfetch
 fi
 
+if ! crontab -l | grep -q "run_dotfiles_sync.sh"; then
+    echo "🛠 Setting up cron jobs..."
+    ~/.scripts/bootstrap/bootstrap_cron.sh
+fi
+
+source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
+source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source ~/.zinit/bin/zinit.zsh
