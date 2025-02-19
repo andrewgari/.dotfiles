@@ -13,6 +13,7 @@ alias shutdown_now="sudo systemctl poweroff"  # Quick shutdown
 
 alias trash='mv --force -t ~/.local/share/Trash '
 alias print='echo'
+alias edit='nvim'
 
 # Bat (better `cat` replacement)
 if command -v bat &>/dev/null; then
@@ -28,6 +29,51 @@ fi
 if command -v htop &>/dev/null; then
     alias top='htop'
 fi
+
+alias pkg-update='
+  if command -v apt >/dev/null; then
+    sudo apt update;
+  elif command -v dnf >/dev/null; then
+    sudo dnf check-update;
+  elif command -v yum >/dev/null; then
+    sudo yum check-update;
+  elif command -v yay >/dev/null; then
+    yay -Sy;
+  elif command -v pacman >/dev/null; then
+    sudo pacman -Sy;
+  elif command -v zypper >/dev/null; then
+    sudo zypper refresh;
+  elif command -v nala >/dev/null; then
+    sudo nala fetch;
+  elif command -v brew >/dev/null; then
+    brew update;
+  else
+    echo "No known package manager found.";
+  fi
+'
+
+alias pkg-upgrade='
+  if command -v apt >/dev/null; then
+    sudo apt upgrade -y;
+  elif command -v dnf >/dev/null; then
+    sudo dnf upgrade --refresh -y;
+  elif command -v yum >/dev/null; then
+    sudo yum update -y;
+  elif command -v yay >/dev/null; then
+    yay -Sua --noconfirm;
+  elif command -v pacman >/dev/null; then
+    sudo pacman -Su --noconfirm;
+  elif command -v zypper >/dev/null; then
+    sudo zypper update -y;
+  elif command -v nala >/dev/null; then
+    sudo nala upgrade -y;
+  elif command -v brew >/dev/null; then
+    brew upgrade;
+  else
+    echo "No known package manager found.";
+  fi
+'
+
 
 # 🔍 Detect Package Manager
 get_package_manager() {

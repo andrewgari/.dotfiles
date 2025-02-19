@@ -16,6 +16,34 @@ configure_git() {
     git config --global core.editor "nvim"
     git config --global credential.helper store
     git config --global init.defaultBranch main
+
+    git config --global alias.undo 'reset --soft HEAD~1'
+    git config --global alias.undo-hard 'reset --hard HEAD~1'
+    git config --global alias.amend 'commit --amend --no-edit'
+    git config --global alias.unstage 'reset HEAD --'
+    git config --global alias.restore 'checkout --'
+    git config --global alias.lg "log --oneline --graph --decorate --all"
+    git config --global alias.last "log -1 HEAD --stat"
+    git config --global alias.changes "diff --name-only HEAD~1"
+    git config --global alias.blame 'blame -w -M -C --show-email'
+    git config --global alias.st 'status -sb'
+    git config --global alias.clean-untracked 'clean -fd'
+    git config --global alias.flush 'gc --prune=now'
+    git config --global alias.br 'branch -a'
+    git config --global alias.co 'checkout'
+    git config --global alias.rename-branch 'branch -m'
+    git config --global alias.up 'pull --rebase'
+    git config --global alias.sync 'fetch --all --prune'
+    git config --global alias.pushf 'push --force-with-lease'
+    git config --global alias.rebase-main 'rebase origin/main'
+    git config --global alias.rebase-dev 'rebase origin/develop'
+    git config --global alias.s 'stash'
+    git config --global alias.slist 'stash list'
+    git config --global alias.spop 'stash pop'
+    git config --global alias.sdrop 'stash drop'
+    git config --global alias.ssave 'stash push -m'
+    git config --global alias.patch "diff --staged > patch.diff"
+    git config --global alias.apply-patch "apply patch.diff"
 }
 
 configure_github_pat() {
