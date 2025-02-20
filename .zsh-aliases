@@ -145,6 +145,9 @@ alias dl="cd ~/Downloads"
 alias repos="cd ~/Repos"
 alias unraid="cd /mnt/unraid"
 
+alias rsync="rsync --one-file-system"
+alias giga-rsync="rsync"
+
 # Exa (Better `ls`)
 if command -v exa &>/dev/null; then
     alias ls='exa --icons'
