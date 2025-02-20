@@ -35,7 +35,7 @@ if [ -f ~/.zshrc.local ]; then
 fi
 
 if [[ -f ~/.netrc ]]; then
-    export GITHUB_TOKEN=$(awk '/github.com/ {getline; print $2}' ~/.netrc)
+# export GITHUB_TOKEN=$(awk '/github.com/ {getline; print $2}' ~/.netrc)
 fi
 
 
