@@ -8,16 +8,35 @@ CRON_JOBS=(
     "0 2 * * * rsync -av --exclude=Vault --exclude=Games/foundryvtt --exclude=Shared --exclude=Unraid --exclude=Videos/unRAID --exclude=Pictures/unRAID --exclude=Games/unRAID --one-file-system ~ /mnt/unraid/andrew/backup/home/"
     "0 1 * * * rsync -av ~/dotfiles /mnt/unraid/andrew/backup/dotfiles/"
     "*/5 * * * * if [ -x "$(command -v moonlight)" ]; then pgrep moonlight || moonlight stream -app Steam; fi"
-    "*/5 * * * * ping -c 1 192.168.50.3 > /dev/null || (sleep 30 && ping -c 1 192.168.50.3 > /dev/null) || (echo "$(date): Unraid is down" >> /mnt/unraid/andrew/backup/unraid_status.log && notify-send "🚨 Unraid is Down!")"
-    "*/5 * * * * ping -c 1 192.168.50.3 > /dev/null || echo "$(date): Unraid offline" >> $HOME/backup/unraid_downtime.log"
-    "*/5 * * * * ping -c 1 8.8.8.8 > /dev/null || notify-send \"🌐 Internet Connection Lost!\""
-    "*/10 * * * * uptime | awk '{if ($10 > 2.0) print strftime("%Y-%m-%d %H:%M:%S"), "⚠️ High CPU Load:", $10}' >> /mnt/unraid/andrew/backup/cpu_load.log && notify-send "⚠️ High CPU Load detected!""
+    "*/5 * * * * ping -c 1 8.8.8.8 > /dev/null || (if [ -x "$(command -v notify-send)" ]; then notify-send "🌐 Internet Connection Lost!"; fi)"
+    "*/10 * * * * uptime | awk '{if ($10 > 2.0) print strftime("%Y-%m-%d %H:%M:%S"), "⚠️ High CPU Load:", $10}' >> /mnt/unraid/andrew/backup/cpu_load.log && if [ -x "$(command -v notify-send)" ]; then notify-send "⚠️ High CPU Load detected!"; fi"
     "*/30 * * * * df -h | awk '$5 > 90 {print "🚨 Low Disk Space on "$6": "$5}' | mail -s "Disk Space Warning!" covadax.ag@gmail.com"
-    "*/10 * * * * mountpoint -q /mnt/unraid || (systemctl restart mnt-unraid-data.mount && notify-send "🔄 Remounted Unraid Share")"
+    "*/10 * * * * if [ -x "$(command -v mountpoint)" ]; then mountpoint -q /mnt/unraid || (systemctl restart mnt-unraid-data.mount && notify-send "🔄 Remounted Unraid Share"); fi"
     "0 1 * * * find ~/Downloads -type f -size +2G -mtime +30 -exec mv {} /mnt/unraid/andrew/backup/old_downloads/ \;"
     "0 4 * * * find /var/log -type f -mtime +7 -exec rm -f {} \;"
     "0 5 * * * rsync -av ~/.ssh /mnt/unraid/andrew/backup/ssh_keys/"
-    "0 9 * * * curl -s https://api.quotable.io/random | jq -r '.content + " - " + .author' | notify-send "🌟 Daily Motivation""
+    "0 9 * * * if [ -x "$(command -v curl)" ] && [ -x "$(command -v jq)" ]; then curl -s https://api.quotable.io/random | jq -r '.content + " - " + .author' | notify-send "🌟 Daily Motivation"; fi"
+    "*/5 * * * * (ping -c 1 192.168.50.3 > /dev/null || (sleep 30 && ping -c 1 192.168.50.3 > /dev/null) || ( 
+    TIMESTAMP=$(date +\"%Y-%m-%d %H:%M:%S\") 
+    MESSAGE=\"🚨 [Unraid Down] - $TIMESTAMP: Unraid (192.168.50.3) is unreachable.\"
+    
+    # Log the downtime
+    echo \"$MESSAGE\" >> /mnt/unraid/andrew/backup/unraid_status.log 
+
+    # Send desktop notification (Linux/macOS)
+    if [ -x \"$(command -v notify-send)\" ]; then 
+        notify-send \"$MESSAGE\" 
+    elif [ \"$(uname)\" = \"Darwin\" ]; then 
+        osascript -e \"display notification \\\"$MESSAGE\\\" with title \\\"Unraid Alert\\\"\"
+    fi
+
+    # Send email to covadax.ag@gmail.com
+    if [ -x \"$(command -v mail)\" ]; then 
+        echo \"$MESSAGE\" | mail -s \"🚨 Unraid Down Alert\" covadax.ag@gmail.com
+    elif [ -x \"$(command -v sendmail)\" ]; then
+        echo -e \"Subject: 🚨 Unraid Down Alert\n\n$MESSAGE\" | sendmail covadax.ag@gmail.com
+    fi
+))"
 )
 
 CRON_JOB_FILE="/tmp/current_cron"
