@@ -3,8 +3,21 @@
 # Define all cron jobs in an array
 CRON_JOBS=(
     "*/15 * * * * $HOME/.scripts/tools/run_dotfiles_sync.sh"
-    # "# Example: Add new cron jobs here"
-    # "0 3 * * * $HOME/.scripts/tools/backup_script.sh"
+    "0 4 * * 0 journalctl --vacuum-time=7d && rm -rf ~/.cache/*"
+    "0 5 * * 0 fstrim -av"
+    "0 2 * * * rsync -av --exclude=Vault --exclude=Games/foundryvtt --exclude=Shared --exclude=Unraid --exclude=Videos/unRAID --exclude=Pictures/unRAID --exclude=Games/unRAID --one-file-system ~ /mnt/unraid/andrew/backup/home/"
+    "0 1 * * * rsync -av ~/dotfiles /mnt/unraid/andrew/backup/dotfiles/"
+    "*/5 * * * * if [ -x "$(command -v moonlight)" ]; then pgrep moonlight || moonlight stream -app Steam; fi"
+    "*/5 * * * * ping -c 1 192.168.50.3 > /dev/null || (sleep 30 && ping -c 1 192.168.50.3 > /dev/null) || (echo "$(date): Unraid is down" >> /mnt/unraid/andrew/backup/unraid_status.log && notify-send "🚨 Unraid is Down!")"
+    "*/5 * * * * ping -c 1 192.168.50.3 > /dev/null || echo "$(date): Unraid offline" >> $HOME/backup/unraid_downtime.log"
+    "*/5 * * * * ping -c 1 8.8.8.8 > /dev/null || notify-send \"🌐 Internet Connection Lost!\""
+    "*/10 * * * * uptime | awk '{if ($10 > 2.0) print strftime("%Y-%m-%d %H:%M:%S"), "⚠️ High CPU Load:", $10}' >> /mnt/unraid/andrew/backup/cpu_load.log && notify-send "⚠️ High CPU Load detected!""
+    "*/30 * * * * df -h | awk '$5 > 90 {print "🚨 Low Disk Space on "$6": "$5}' | mail -s "Disk Space Warning!" covadax.ag@gmail.com"
+    "*/10 * * * * mountpoint -q /mnt/unraid || (systemctl restart mnt-unraid-data.mount && notify-send "🔄 Remounted Unraid Share")"
+    "0 1 * * * find ~/Downloads -type f -size +2G -mtime +30 -exec mv {} /mnt/unraid/andrew/backup/old_downloads/ \;"
+    "0 4 * * * find /var/log -type f -mtime +7 -exec rm -f {} \;"
+    "0 5 * * * rsync -av ~/.ssh /mnt/unraid/andrew/backup/ssh_keys/"
+    "0 9 * * * curl -s https://api.quotable.io/random | jq -r '.content + " - " + .author' | notify-send "🌟 Daily Motivation""
 )
 
 CRON_JOB_FILE="/tmp/current_cron"
