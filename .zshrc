@@ -148,9 +148,20 @@ if command -v fastfetch &>/dev/null; then
     fastfetch
 fi
 
-if ! crontab -l | grep -q "run_dotfiles_sync.sh"; then
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    CRON_CMD="crontab -l 2>/dev/null"
+else
+    CRON_CMD="sudo crontab -l 2>/dev/null"
+fi
+
+if ! eval "$CRON_CMD" | grep -q "run_dotfiles_sync.sh"; then
     echo "🛠 Setting up cron jobs..."
     ~/.scripts/bootstrap/bootstrap_cron.sh
+fi
+
+# Ensure all scripts in ~/.scripts are executable
+if [ -d "$HOME/.scripts" ]; then
+    find "$HOME/.scripts" -type f -not -perm -u+x -exec chmod +x {} \;
 fi
 
 source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
