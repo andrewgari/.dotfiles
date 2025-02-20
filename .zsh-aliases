@@ -16,6 +16,12 @@ alias dotfiles-status="dotgit status"
 alias dotfiles-log="dotgit log --oneline --graph --decorate -n 10"
 alias dotfiles-reset="dotgit reset --hard && dotgit clean -fd"
 
+alias bootstrap-github="$HOME/.scripts/bootstrap/bootstrap_github.sh"
+alias bootstrap-packages="$HOME/.scripts/bootstrap/bootstrap_packages.sh"
+alias bootstrap-dev="$HOME/.scripts/bootstrap/bootstrap_dev_environment.sh"
+
+alias git-https-to-ssh='git remote -v | awk "/https:\/\/github.com/ {print \$1, \$2}" | while read remote url; do git remote set-url "$remote" "$(echo "$url" | sed -E "s|https://github.com/|git@github.com:|;s|.git$||").git"; done'
+
 dotfiles-backup() {
     TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
     BACKUP_DIR="$HOME/backups/dotfiles-$TIMESTAMP.tar.gz"
