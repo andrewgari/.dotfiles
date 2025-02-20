@@ -72,6 +72,9 @@ alias trash='mv --force -t ~/.local/share/Trash '
 alias print='echo'
 alias edit='nvim'
 
+alias sshpc='ssh andrewgari@192.168.50.2'
+alias sshwork='ssh andrewgari@192.168.50.11'
+
 # Bat (better `cat` replacement)
 if command -v bat &>/dev/null; then
     alias cat='bat --style=plain'
