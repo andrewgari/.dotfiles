@@ -83,7 +83,7 @@ if git -C "$DOTFILES_REPO" diff --cached --quiet; then
     echo "✅ No changes to commit."
 else
     CHANGED_FILES=$(git -C "$DOTFILES_REPO" diff --cached --name-only | sed 's/^/- /')
-    COMMIT_MSG="➕ Automated addition of new dotfiles\n\nNew files:\n$CHANGED_FILES"
+    COMMIT_MSG="➕ Automated addition of new dotfiles"
 
     if [ "$DRY_RUN" = true ]; then
         printf "🟡 [Dry Run] Would commit changes: %s\n" "$COMMIT_MSG"
