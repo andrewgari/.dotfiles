@@ -1,4 +1,7 @@
 # ~/.zshrc - Portable Zsh Configuration
+# Add both variables to be thorough
+export EDITOR=nvim
+export VISUAL=nvim
 
 # ---------
 # Detect OS & Package Manager
