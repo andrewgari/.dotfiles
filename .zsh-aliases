@@ -126,6 +126,13 @@ alias pkg-upgrade='
   fi
 '
 
+alias status='systemctl status'
+alias start='systemctl start'
+alias enable='systemctl enable'
+alias disable='systemctl disable'
+alias stop='systemctl stop'
+alias restart='systemctl daemon-reload'
+
 # -------------------
 # 🔹 NETWORKING
 # -------------------
