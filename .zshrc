@@ -148,12 +148,6 @@ if command -v fastfetch &>/dev/null; then
     fastfetch
 fi
 
-if ! eval "$CRON_CMD" | grep -q "run_dotfiles_sync.sh"; then
-    echo "🛠 Setting up cron jobs..."
-    ~/.scripts/bootstrap/bootstrap_cron.sh
-fi
-
-# Ensure all scripts in ~/.scripts are executable
 if [ -d "$HOME/.scripts" ]; then
     find "$HOME/.scripts" -type f -not -perm -u+x -exec chmod +x {} \;
 fi
