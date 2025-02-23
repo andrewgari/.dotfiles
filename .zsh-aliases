@@ -61,6 +61,8 @@ create-alias() {
 
 alias zshrc='nvim ~/.zshrc && source ~/.zshrc'
 alias aliases='nvim ~/.zsh-aliases && source ~/.zshrc'
+alias update='sudo dnf update && sudo dnf upgrade'
+alias install='sudo dnf install'
 
 alias free_space="df -h --total | grep total"  # Show disk space in human-readable format
 alias meminfo="free -h"  # Show available RAM
@@ -94,7 +96,7 @@ fi
 # 🔹 PACKAGE MANAGEMENT
 # -------------------
 
-alias pkg-update='
+alias update-pkg='
   if command -v apt >/dev/null; then
     sudo apt update;
   elif command -v dnf >/dev/null; then
