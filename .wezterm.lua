@@ -88,8 +88,8 @@ config.font = wezterm.font_with_fallback({
 	"JetBrains Mono",
 	"Noto Color Emoji",
 })
-config.font_size = 11
-config.line_height = 1.1
+config.font_size = 12
+config.line_height = 1.2
 config.harfbuzz_features = { "calt=1", "liga=1" }
 
 -- -- Window appearance
