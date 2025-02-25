@@ -35,3 +35,8 @@
 	what-if = !~/.scripts/git-what-if.sh
 	issue = !~/.scripts/gh-issue.sh
 	push-rebase = !~/.scripts/git-push-rebase.sh
+[filter "lfs"]
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
