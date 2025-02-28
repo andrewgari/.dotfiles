@@ -325,3 +325,4 @@ fix_nvim_zsh() {
     echo "✅ Reinstallation complete! Everything is now fresh and up to date."
 }
 
+alias chrome="google-chrome-stable --ozone-platform=wayland"
