@@ -158,3 +158,5 @@ fi
 source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
 source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source ~/.zinit/bin/zinit.zsh
+export PATH=~/.npm-global/bin:$PATH
+export PATH=~/.npm-global/bin:$PATH

@@ -68,3 +68,4 @@ fi
 
 fastfetch
 
+export PATH=~/.npm-global/bin:$PATH
