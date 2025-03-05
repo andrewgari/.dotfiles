@@ -332,6 +332,7 @@ alias ~="cd ~"
 alias docs="cd ~/Documents"
 alias dl="cd ~/Downloads"
 alias repos="cd ~/Repos"
+alias starbunk="cd ~/Repos/starbunk-js"
 alias unraid="cd /mnt/unraid"
 alias -- -="cd -"      # Go back to previous directory
 
