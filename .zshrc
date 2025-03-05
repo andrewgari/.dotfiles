@@ -175,3 +175,6 @@ fi
 typeset -U PATH
 export PATH=~/.npm-global/bin:$PATH
 export PATH=~/.local/bin:$PATH
+
+# Ensure we're not using fd as a replacement for find
+unalias find 2>/dev/null

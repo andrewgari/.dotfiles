@@ -208,9 +208,11 @@ elif command -v htop &>/dev/null; then
     alias top='htop'
 fi
 
-# Use `fd` over `find` if available
+# Use `fd` as a standalone command, never replace `find` with it
 if command -v fd &>/dev/null; then
-    alias find='fd'
+    # fd is already available by its own name, don't create aliases for it
+    # IMPORTANT: Never alias find to fd as it breaks many scripts and commands
+    :
 fi
 
 # Use `rg` over `grep` if available
@@ -522,7 +524,7 @@ genpass() {
 }
 
 # Get external IP address
-myip() {
+whatismyip() {
     echo "Public IP: $(curl -s ifconfig.me)"
     echo "Local IP: $(hostname -I | awk '{print $1}')"
 }
