@@ -31,6 +31,7 @@ dotfiles-backup() {
     echo "✅ Backup completed!"
 }
 
+# Create a new alias and save it to .zsh-aliases.local
 create-alias() {
     if [[ -z "$1" || -z "$2" ]]; then
         echo "⚠️ Usage: create-alias <alias_name> <command>"
@@ -46,40 +47,153 @@ create-alias() {
         return 1
     fi
 
-    # Append the alias to .zshrc
+    # Create .zsh-aliases.local if it doesn't exist
+    touch "$HOME/.zsh-aliases.local"
+    
+    # Append the alias
     echo "🔗 Creating alias: $alias_name -> '$alias_command'"
-    echo "alias $alias_name='$alias_command'" >> "$HOME/.zshrc"
+    echo "alias $alias_name='$alias_command'" >> "$HOME/.zsh-aliases.local"
 
     # Reload shell to apply
-    source "$HOME/.zshrc"
+    source "$HOME/.zsh-aliases.local"
     echo "✅ Alias '$alias_name' added successfully!"
+}
+
+# Edit an existing alias
+edit-alias() {
+    if [[ -z "$1" ]]; then
+        echo "⚠️ Usage: edit-alias <alias_name>"
+        return 1
+    fi
+
+    local alias_name="$1"
+    local current_alias
+    
+    # Check if alias exists
+    if ! alias "$alias_name" &>/dev/null; then
+        echo "❌ Alias '$alias_name' doesn't exist!"
+        return 1
+    fi
+    
+    # Get current alias definition
+    current_alias=$(alias "$alias_name" | sed "s/alias $alias_name=//;s/'//g")
+    
+    # Prompt for new command
+    echo "📝 Current command: $current_alias"
+    read -p "Enter new command: " new_command
+    
+    # Replace in .zsh-aliases.local if present
+    if grep -q "alias $alias_name=" "$HOME/.zsh-aliases.local" 2>/dev/null; then
+        sed -i "s|alias $alias_name=.*|alias $alias_name='$new_command'|" "$HOME/.zsh-aliases.local"
+        source "$HOME/.zsh-aliases.local"
+        echo "✅ Alias updated in .zsh-aliases.local!"
+    # Replace in .zsh-aliases if present
+    elif grep -q "alias $alias_name=" "$HOME/.zsh-aliases" 2>/dev/null; then
+        echo "⚠️ This alias is defined in .zsh-aliases, not in .zsh-aliases.local"
+        echo "⚠️ To edit it, open .zsh-aliases in your editor: aliases"
+    # Replace in .zshrc if present
+    elif grep -q "alias $alias_name=" "$HOME/.zshrc" 2>/dev/null; then
+        sed -i "s|alias $alias_name=.*|alias $alias_name='$new_command'|" "$HOME/.zshrc"
+        source "$HOME/.zshrc"
+        echo "✅ Alias updated in .zshrc!"
+    else
+        echo "❌ Couldn't find alias definition in config files."
+    fi
+}
+
+# Remove an alias
+remove-alias() {
+    if [[ -z "$1" ]]; then
+        echo "⚠️ Usage: remove-alias <alias_name>"
+        return 1
+    fi
+
+    local alias_name="$1"
+    
+    # Check if alias exists
+    if ! alias "$alias_name" &>/dev/null; then
+        echo "❌ Alias '$alias_name' doesn't exist!"
+        return 1
+    fi
+    
+    # Remove from .zsh-aliases.local if present
+    if grep -q "alias $alias_name=" "$HOME/.zsh-aliases.local" 2>/dev/null; then
+        sed -i "/alias $alias_name=/d" "$HOME/.zsh-aliases.local"
+        source "$HOME/.zsh-aliases.local"
+        echo "✅ Alias removed from .zsh-aliases.local!"
+    # Remove from .zshrc if present
+    elif grep -q "alias $alias_name=" "$HOME/.zshrc" 2>/dev/null; then
+        sed -i "/alias $alias_name=/d" "$HOME/.zshrc"
+        source "$HOME/.zshrc"
+        echo "✅ Alias removed from .zshrc!"
+    else
+        echo "⚠️ Alias is defined in .zsh-aliases"
+        echo "⚠️ To remove it, edit .zsh-aliases in your editor: aliases"
+    fi
+    
+    # Unset the alias
+    unalias "$alias_name" 2>/dev/null
 }
 
 # -------------------
 # 🔹 SYSTEM UTILITIES
 # -------------------
 
-alias zshrc='nvim ~/.zshrc && source ~/.zshrc'
-alias aliases='nvim ~/.zsh-aliases && source ~/.zshrc'
+# Config file quick access
+alias zshrc='${EDITOR:-nvim} ~/.zshrc && source ~/.zshrc'
+alias aliases='${EDITOR:-nvim} ~/.zsh-aliases && source ~/.zshrc'
+alias vimrc='${EDITOR:-nvim} ~/.config/nvim/init.lua'
+
+# Package management shortcuts
 alias update='sudo dnf update && sudo dnf upgrade'
 alias install='sudo dnf install'
+alias search='dnf search'
+alias remove='sudo dnf remove'
+alias autoremove='sudo dnf autoremove'
+alias clean='sudo dnf clean all'
 
+# System info and monitoring
 alias free_space="df -h --total | grep total"  # Show disk space in human-readable format
 alias meminfo="free -h"  # Show available RAM
 alias processes="ps aux --sort=-%cpu | head -15"  # Show top CPU-consuming processes
+alias cpu_temp="sensors | grep Core"  # CPU temperature
+alias io_stats="iostat -x 1 3"  # Disk I/O statistics
+alias net_stats="ss -tuln"  # Network port usage
+alias sys_info="inxi -Fxz"  # Full system information
+alias uptime_info="uptime -p"  # Pretty uptime
+
+# Power management
 alias reboot_now="sudo systemctl reboot"  # Quick reboot
 alias shutdown_now="sudo systemctl poweroff"  # Quick shutdown
+alias suspend="systemctl suspend"  # Suspend system
+alias hibernate="systemctl hibernate"  # Hibernate system
 
+# File operations
 alias trash='mv --force -t ~/.local/share/Trash '
+alias rm='rm -i'  # Prompt before removing files
+alias cp='cp -i'  # Prompt before overwriting files
+alias mv='mv -i'  # Prompt before overwriting files
+alias mkdir='mkdir -p'  # Create parent directories as needed
+alias md='mkdir -p'  # Short for mkdir -p
 alias print='echo'
-alias edit='nvim'
+alias edit='${EDITOR:-nvim}'
 
+# SSH connections
 alias sshpc='ssh andrewgari@192.168.50.2'
 alias sshwork='ssh andrewgari@192.168.50.11'
+alias ssh_copy_id='ssh-copy-id -i ~/.ssh/id_rsa.pub'  # Copy SSH key to server
 
+# Copy/paste in terminal
+alias c='xclip -selection clipboard'
+alias v='xclip -selection clipboard -o'
+
+# Modern CLI tools
 # Bat (better `cat` replacement)
 if command -v bat &>/dev/null; then
     alias cat='bat --style=plain'
+    alias bathelp='bat --plain --language=help'
+    alias catp='bat -p'  # Plain mode (no line numbers, etc.)
+    help() { "$@" --help 2>&1 | bathelp; }  # Show help pages with syntax highlighting
 fi
 
 # Use `duf` for better disk usage overview
@@ -87,10 +201,44 @@ if command -v duf &>/dev/null; then
     alias df='duf --only local'
 fi
 
-# Use `htop` if installed
-if command -v htop &>/dev/null; then
+# Use `btop` or `htop` if installed
+if command -v btop &>/dev/null; then
+    alias top='btop'
+elif command -v htop &>/dev/null; then
     alias top='htop'
 fi
+
+# Use `fd` over `find` if available
+if command -v fd &>/dev/null; then
+    alias find='fd'
+fi
+
+# Use `rg` over `grep` if available
+if command -v rg &>/dev/null; then
+    alias grep='rg'
+fi
+
+# Extract any archive
+extract() {
+    if [ -f $1 ] ; then
+        case $1 in
+            *.tar.bz2)   tar xjf $1     ;;
+            *.tar.gz)    tar xzf $1     ;;
+            *.bz2)       bunzip2 $1     ;;
+            *.rar)       unrar e $1     ;;
+            *.gz)        gunzip $1      ;;
+            *.tar)       tar xf $1      ;;
+            *.tbz2)      tar xjf $1     ;;
+            *.tgz)       tar xzf $1     ;;
+            *.zip)       unzip $1       ;;
+            *.Z)         uncompress $1  ;;
+            *.7z)        7z x $1        ;;
+            *)           echo "'$1' cannot be extracted via extract()" ;;
+        esac
+    else
+        echo "'$1' is not a valid file"
+    fi
+}
 
 # -------------------
 # 🔹 PACKAGE MANAGEMENT
@@ -139,35 +287,91 @@ alias restart='systemctl daemon-reload'
 # 🔹 NETWORKING
 # -------------------
 
+# IP and network info
 alias myip="curl ifconfig.me"  # Get public IP address
+alias localip="hostname -I | awk '{print \$1}'"  # Get local IP address
+alias ips="ip -c a"  # Show all IPs with color
+alias ports="ss -tulanp"  # Show all open ports
+alias listening="ss -ltn"  # Show listening TCP ports
+alias connections="ss -tn"  # Show established connections
+
+# Network troubleshooting
 alias flush_dns="sudo systemd-resolve --flush-caches && sudo systemctl restart systemd-resolved"
+alias dns_servers="grep -i nameserver /etc/resolv.conf"
+alias ping_google="ping -c 5 google.com"  # Test internet connectivity
+alias tracert="traceroute"  # Windows-like alias
+alias mtr_google="mtr google.com"  # Better traceroute if mtr is installed
+
+# Speedtest & Network scanning
 alias speedtest="fast"
-alias nmap_local="sudo nmap -sP 192.168.50.0/24"
+alias nmap_local="sudo nmap -sP 192.168.50.0/24"  # Scan local network
+alias nmap_ports="sudo nmap -p 1-1000"  # Scan common ports
+alias nmap_os="sudo nmap -O"  # OS detection scan
+
+# Network service management
 alias restart_network="sudo systemctl restart NetworkManager"
+alias wifi_list="nmcli device wifi list"  # List available WiFi networks
+alias wifi_connect="nmcli device wifi connect"  # Connect to WiFi
+alias wifi_on="nmcli radio wifi on"  # Turn WiFi on
+alias wifi_off="nmcli radio wifi off"  # Turn WiFi off
+
+# HTTP requests with curl
+get() { curl -s "$@" | jq 2>/dev/null || cat; }  # GET request with JSON formatting
+post() { curl -s -X POST -d "$2" -H "Content-Type: application/json" "$1" | jq 2>/dev/null || cat; }  # POST request
 
 # -------------------
 # 🔹 FILE & DIRECTORY NAVIGATION
 # -------------------
 
+# Directory navigation
 alias ..="cd .."
 alias ...="cd ../.."
 alias ....="cd ../../.."
+alias .....="cd ../../../.."
+alias ~="cd ~"
 alias docs="cd ~/Documents"
 alias dl="cd ~/Downloads"
 alias repos="cd ~/Repos"
 alias unraid="cd /mnt/unraid"
+alias -- -="cd -"      # Go back to previous directory
 
-alias rsync="rsync --one-file-system"
-alias giga-rsync="rsync"
+# Better rsync defaults
+alias rsync="rsync -avz --progress --one-file-system"
+alias giga-rsync="rsync -avz --progress"
+alias rsync-update="rsync -avzu --progress --delete"
+
+# Create directory and enter it
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
+# Find directory and cd into it
+cdg() {
+    local dir
+    dir=$(find ${1:-.} -type d -not -path "*/\.*" | fzf +m) && cd "$dir"
+}
+
+# List directory when changing directory
+function cd() {
+    builtin cd "$@" && ls
+}
 
 # Exa (Better `ls`)
 if command -v exa &>/dev/null; then
     alias ls='exa --icons'
-    alias ll='exa -l --icons'
-    alias la='exa -la --icons'
-    alias lt='exa -lT --icons'
+    alias ll='exa -l --icons --group-directories-first'
+    alias la='exa -la --icons --group-directories-first'
+    alias lt='exa -lT --icons --git-ignore'
     alias lg='exa -l --git --icons'
     alias lsd='exa -D --icons'
+    alias lt1='exa -lT --icons --level=1'
+    alias lt2='exa -lT --icons --level=2'
+elif command -v lsd &>/dev/null; then
+    # Fallback to lsd if exa isn't available
+    alias ls='lsd'
+    alias ll='lsd -l'
+    alias la='lsd -la'
+    alias lt='lsd --tree'
 fi
 
 # -------------------
@@ -175,14 +379,47 @@ fi
 # -------------------
 
 alias g="git"
-alias gs="git status"
-alias ga="git add ."
+alias gs="git status -sb"  # Short status with branch info
+alias ga="git add"
+alias gaa="git add --all"  # Add all changes
 alias gc="git commit -m"
 alias gp="git push -u origin"
 alias gl="git log --oneline --graph --decorate --all"
 alias gd="git diff"
+alias gds="git diff --staged"  # See staged changes
 alias gco="git switch"
+alias gcob="git switch -c"  # Create and switch to branch
 alias gpull="git pull origin"
+alias gf="git fetch --all"
+alias grb="git rebase"
+alias gm="git merge"
+alias gre="git restore"  # Restore files
+alias grs="git restore --staged"  # Unstage files
+alias gpf="git push --force-with-lease"  # Safer force push
+alias grh="git reset --hard"
+alias gb="git branch"  # List branches
+alias gbl="git branch -l"  # List local branches
+alias gbr="git branch -r"  # List remote branches
+alias gbd="git branch -d"  # Delete branch
+alias gcl="git clone"
+alias gst="git stash"
+alias gstp="git stash pop"
+alias gundo="git reset --soft HEAD~1"  # Undo last commit
+
+# Show the most frequently used git commands
+git-stats() {
+  history | grep "git " | awk '{print $2, $3}' | sort | uniq -c | sort -nr | head -n 10
+}
+
+# Show git status in a cleaner format
+git-summary() {
+  git rev-parse --is-inside-work-tree &>/dev/null || { echo "Not a git repository!"; return 1; }
+  echo "Branch: $(git branch --show-current)"
+  echo "Status:"
+  git status -s
+  echo "Recent commits:"
+  git log --oneline -n 5
+}
 
 # -------------------
 # 🔹 DOCKER & SYSTEMD
@@ -194,11 +431,40 @@ alias docker_cleanup="docker system prune -a -f && docker volume prune -f"
 # Podman (Docker Alternative)
 if command -v podman &>/dev/null; then
     alias docker="podman"
-    alias dps='docker ps'
-    alias dpa='docker ps -a'
-    alias drm='docker rm $(docker ps -aq)'
-    alias dstop='docker stop $(docker ps -q)'
 fi
+
+# Docker/Podman common aliases
+alias dps='docker ps'
+alias dpa='docker ps -a'
+alias drm='docker rm'
+alias drmi='docker rmi'
+alias drma='docker rm $(docker ps -aq)'
+alias dstop='docker stop'
+alias dstopa='docker stop $(docker ps -q)'
+alias drestart='docker restart'
+alias dlogs='docker logs'
+alias dexec='docker exec -it'
+alias dimg='docker images'
+alias dcup='docker-compose up -d'
+alias dcdown='docker-compose down'
+alias dcps='docker-compose ps'
+alias dclogs='docker-compose logs -f'
+alias dcrestart='docker-compose restart'
+
+# Docker/Podman utility functions
+dsh() {
+    # Shell into a running container
+    docker exec -it "$1" /bin/bash || docker exec -it "$1" /bin/sh
+}
+
+dprune() {
+    # Prune unused Docker resources
+    echo "Pruning containers, networks, and images..."
+    docker system prune -a -f
+    echo "Pruning volumes..."
+    docker volume prune -f
+    echo "Docker system cleaned!"
+}
 
 alias list_services="systemctl list-units --type=service --state=running"
 alias reload_systemd="sudo systemctl daemon-reexec"
@@ -207,16 +473,107 @@ alias reload_systemd="sudo systemctl daemon-reexec"
 # 🔹 MISC SHORTCUTS
 # -------------------
 
+# Log viewing
 alias watch_logs="journalctl -f"
-alias top_cpu="ps -eo pid,comm,%cpu --sort=-%cpu | head"
-alias top_mem="ps -eo pid,comm,%mem --sort=-%mem | head"
+alias logs="journalctl -xe"
+alias system_logs="journalctl -b"
+alias service_logs="journalctl -u"
+alias error_logs="journalctl -p err..alert -b"
+
+# Process monitoring
+alias top_cpu="ps -eo pid,ppid,cmd,%cpu,%mem --sort=-%cpu | head -10"
+alias top_mem="ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%mem | head -10"
+alias psmem="ps auxf | sort -nr -k 4 | head -10"
+alias pscpu="ps auxf | sort -nr -k 3 | head -10"
+alias pstree="pstree -pula"  # Process tree
+
+# Common utilities
+alias weather="curl wttr.in"  # Show weather
+alias h="history | grep"  # Search history
+alias ports="netstat -tulanp"  # Show open ports
+alias paths="echo $PATH | tr ':' '\n'"  # Show PATH entries
+alias path="echo $PATH | tr ':' '\n'"  # Same as paths
+alias now="date +\"%T\""  # Current time
+alias nowtime="now"
+alias nowdate="date +\"%d-%m-%Y\""  # Current date
+alias week="date +%V"  # Week number
+
+# Quick calculations
+calc() {
+    echo "scale=2; $*" | bc -l
+}
+
+# Internet speed test
+speedtest-cli() {
+    if command -v fast &>/dev/null; then
+        fast
+    elif command -v speedtest-cli &>/dev/null; then
+        speedtest-cli
+    else
+        curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python -
+    fi
+}
+
+# Generate a strong password
+genpass() {
+    local length=${1:-20}
+    openssl rand -base64 48 | cut -c1-$length
+}
+
+# Get external IP address
+myip() {
+    echo "Public IP: $(curl -s ifconfig.me)"
+    echo "Local IP: $(hostname -I | awk '{print $1}')"
+}
 
 # -------------------
 # 🔹 FLATPAK & SOFTWARE
 # -------------------
 
+# Flatpak management
 alias flatpak_list="flatpak list"
 alias flatpak_clean="flatpak uninstall --unused -y && flatpak repair"
+alias flatpak_update="flatpak update -y"
+alias flatpak_install="flatpak install"
+alias flatpak_remove="flatpak uninstall"
+alias flatpak_search="flatpak search"
+alias flatpak_run="flatpak run"
+alias flatpak_info="flatpak info"
+
+# NPM shortcuts
+alias npmi="npm install"
+alias npmg="npm install -g"
+alias npmu="npm update"
+alias npmr="npm run"
+alias npms="npm start"
+alias npmt="npm test"
+alias npml="npm list --depth=0"
+alias npmgl="npm list -g --depth=0"
+
+# Yarn shortcuts
+if command -v yarn &>/dev/null; then
+    alias yi="yarn install"
+    alias ya="yarn add"
+    alias yad="yarn add --dev"
+    alias yr="yarn remove"
+    alias ys="yarn start"
+    alias yt="yarn test"
+    alias yb="yarn build"
+fi
+
+# Development tools
+alias python="python3"
+alias py="python3"
+alias pip="pip3"
+alias venv="python3 -m venv venv"
+alias activate="source venv/bin/activate"
+
+# Quickly serve current directory
+serve() {
+    local port=${1:-8000}
+    echo "Serving on http://localhost:$port"
+    python3 -m http.server $port
+}
 
 # -----------------------------
 # Zoxide Smart Navigation
@@ -226,7 +583,16 @@ if command -v zoxide &>/dev/null; then
     eval "$(zoxide init zsh)"
     alias z='zoxide query --exclude "$(pwd)"'
     alias zi='zoxide query --interactive'
+    alias za='zoxide add'      # Add a directory manually
+    alias zr='zoxide remove'   # Remove a directory
+    alias zri='zoxide remove --interactive'  # Remove interactively
 fi
+
+# Jump to directories quickly
+j() {
+    [ $# -gt 0 ] || return
+    cd "$(zoxide query "$@")" || return
+}
 
 # -----------------------------
 # Personal Scripts

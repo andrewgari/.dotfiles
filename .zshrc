@@ -75,16 +75,24 @@ setopt APPEND_HISTORY       # Append to history file instead of overwriting
 # Key Bindings (History Search)
 # -----------------------------
 
-# Uncomment these lines if you want to enable history substring search
+# History search with up/down arrows
 bindkey '^[[A' history-search-backward  # Up Arrow for history search
 bindkey '^[[B' history-search-forward   # Down Arrow for history search
-bindkey '^[[1;5C' forward-word   # Ctrl + →
-bindkey '^[[1;5D' backward-word  # Ctrl + ←
-bindkey '^H' backward-kill-word  # Ctrl + Backspace
-bindkey '^U' backward-kill-line
-bindkey '^L' clear-screen
-bindkey '^[q' kill-whole-line
-bindkey -M viins '^[[Z' reverse-menu-complete
+
+# Word navigation
+bindkey '^[[1;5C' forward-word          # Ctrl + →
+bindkey '^[[1;5D' backward-word         # Ctrl + ←
+bindkey '^H' backward-kill-word         # Ctrl + Backspace
+bindkey '^U' backward-kill-line         # Ctrl + U
+bindkey '^L' clear-screen               # Ctrl + L
+bindkey '^[q' kill-whole-line           # Alt + Q
+bindkey -M viins '^[[Z' reverse-menu-complete  # Shift + Tab
+
+# Add Emacs-like bindings
+bindkey '^A' beginning-of-line          # Ctrl + A
+bindkey '^E' end-of-line                # Ctrl + E
+bindkey '^K' kill-line                  # Ctrl + K
+bindkey '^R' history-incremental-search-backward  # Ctrl + R
 
 # -----------------------------
 # Prompt Enhancements
@@ -103,6 +111,9 @@ autoload -Uz compinit && compinit
 
 # Enable additional completion scripts if installed
 zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' # Case insensitive matching
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}" # Colored completion items
+zstyle ':completion:*' special-dirs true # Complete special directories like .. and ~
 
 # -----------------------------
 # Plugins (Managed via zinit)
@@ -114,8 +125,7 @@ zinit light zsh-users/zsh-syntax-highlighting
 # Autosuggestions (gray text suggesting previous commands)
 zinit light zsh-users/zsh-autosuggestions
 
-# Fast syntax highlighting (alternative to above, pick one)
-# zinit light zdharma-continuum/fast-syntax-highlighting
+# Fast syntax highlighting (already loaded below)
 
 # Fuzzy finder for command history and completions
 zinit light Aloxaf/fzf-tab
@@ -127,7 +137,8 @@ zinit light zdharma-continuum/history-search-multi-word
 zinit light rupa/z
 
 # Git plugin with improved aliases and completion
-zinit ice wait lucid atload"alias gst='git status'" # Lazy-load with alias
+zinit ice wait lucid atload"alias gst='git status'"
+zinit light zdharma-continuum/fast-syntax-highlighting
 
 # Adds extra completions for common tools
 zinit light zsh-users/zsh-completions
@@ -155,8 +166,12 @@ if [ -d "$HOME/.scripts" ]; then
     find "$HOME/.scripts" -type f -not -perm -u+x -exec chmod +x {} \;
 fi
 
-source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
-source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source ~/.zinit/bin/zinit.zsh
+# These are already loaded via zinit plugins above
+# source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
+# source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+# source ~/.zinit/bin/zinit.zsh (already sourced at the top)
+
+# Path management - remove duplicate entries
+typeset -U PATH
 export PATH=~/.npm-global/bin:$PATH
-export PATH=~/.npm-global/bin:$PATH
+export PATH=~/.local/bin:$PATH
