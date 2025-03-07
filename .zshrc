@@ -178,3 +178,4 @@ export PATH=~/.local/bin:$PATH
 
 # Ensure we're not using fd as a replacement for find
 unalias find 2>/dev/null
+export DISPLAY=:0
