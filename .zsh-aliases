@@ -1,3 +1,5 @@
+alias dnf='dnf --skip-unavailable --skip-broken'
+
 # -------------------
 # 🔹 DOTFILES ALIASES
 # -------------------

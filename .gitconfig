@@ -1,9 +1,12 @@
 [user]
 	name = andrewgari
 	email = covadax.ag@gmail.com
+	signingkey = C1E895BBA44D6EEF
 [core]
 	editor = nvim
 	pager = delta --dark --syntax-theme=Monokai
+	hooksPath = /home/andrewgari/.git-hooks
+	sshCommand = ssh -i ~/.ssh/github_rsa
 [credential]
 	helper = store
 [init]
@@ -37,8 +40,40 @@
 	what-if = !~/.scripts/git-what-if.sh
 	issue = !~/.scripts/gh-issue.sh
 	push-rebase = !~/.scripts/git-push-rebase.sh
+	undo = reset --soft HEAD~1
+	undo-hard = reset --hard HEAD~1
+	amend = commit --amend --no-edit
+	unstage = reset HEAD --
+	restore = checkout --
+	lg = log --oneline --graph --decorate --all
+	last = log -1 HEAD --stat
+	changes = diff --name-only HEAD~1
+	blame = blame -w -M -C --show-email
+	st = status -sb
+	clean-untracked = clean -fd
+	flush = gc --prune=now
+	br = branch -a
+	co = checkout
+	rename-branch = branch -m
+	up = pull --rebase
+	sync = fetch --all --prune
+	pushf = push --force-with-lease
+	rebase-main = rebase origin/main
+	rebase-dev = rebase origin/develop
+	s = stash
+	slist = stash list
+	spop = stash pop
+	sdrop = stash drop
+	ssave = stash push -m
+	patch = diff --staged > patch.diff
+	apply-patch = apply patch.diff
+	fuck-hard = reset --hard HEAD~1
 [filter "lfs"]
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
 	clean = git-lfs clean -- %f
+[url "git@github.com:"]
+	insteadOf = https://github.com/
+[commit]
+	gpgsign = true

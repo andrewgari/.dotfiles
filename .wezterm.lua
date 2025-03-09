@@ -86,6 +86,7 @@ config.keys = {
 -- Font configuration
 config.font = wezterm.font_with_fallback({
 	"JetBrains Mono",
+	"FiraCodeNerdFontsMono",
 	"Noto Color Emoji",
 })
 config.font_size = 12
