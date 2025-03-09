@@ -2,101 +2,207 @@
 
 set -e  # Exit on error
 
-# Detect package manager
-if [[ "$(uname)" == "Darwin" ]]; then
-    PACKAGE_MANAGER="brew"
-elif command -v dnf &>/dev/null; then
-    PACKAGE_MANAGER="dnf"
-elif command -v yay &>/dev/null; then
-    PACKAGE_MANAGER="yay"
-elif command -v pacman &>/dev/null; then
-    PACKAGE_MANAGER="pacman"
-elif command -v apt &>/dev/null; then
-    PACKAGE_MANAGER="apt"
-else
-    echo "Unsupported package manager" >&2
-    exit 1
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INSTALLERS_DIR="$SCRIPT_DIR/installers"
+PACKAGES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)/packages"
+DRY_RUN=false
 
-# System-wide applications
-APPS_PACKAGE_MANAGER=(
-    "git" "neovim" "fzf" "htop" "starship" "fastfetch" "zsh" "wget"
-    "zsh-autosuggestions" "zsh-syntax-highlighting" "docker" "docker-compose"
-    "podman" "gh" "rsync" "tmux" "tldr" "jq" "yq" "tree" "bat" "ripgrep"
-    "fd" "virt-manager" "qemu" "libvirt" "ffmpeg" "thefuck" "scc" "exa" "ghostty"
-    "navi" "git-extras" "progress" "android-tools" "google-chrome" "flatpak"
-)
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--dry-run]"
+            exit 1
+            ;;
+    esac
+done
 
-# Brew-specific packages
-if [[ "$PACKAGE_MANAGER" == "brew" ]]; then
-    APPS_PACKAGE_MANAGER+=(
-        "raycast"
-    )
-fi
+# Function to check if a file exists and is readable
+check_file() {
+    local file="$1"
+    if [[ ! -f "$file" ]]; then
+        echo "❌ Missing file: $file"
+        return 1
+    elif [[ ! -r "$file" ]]; then
+        echo "❌ File not readable: $file"
+        return 1
+    else
+        echo "✅ Found file: $file"
+        return 0
+    fi
+}
 
-# Flatpak package mapping
-declare -A FLATPAK_MAPPING=(
-    ["retroarch"]="org.libretro.RetroArch"
-    ["ppsspp"]="org.ppsspp.PPSSPP"
-    ["duckstation"]="org.duckstation.DuckStation"
-    ["pcsx2"]="net.pcsx2.PCSX2"
-    ["yuzu"]="org.yuzu_emu.yuzu"
-    ["rpcs3"]="net.rpcs3.RPCS3"
-    ["dolphin"]="org.DolphinEmu.dolphin-emu"
-    ["prism-launcher"]="org.prismlauncher.PrismLauncher"
-    ["obs-studio"]="com.obsproject.Studio"
-    ["steam"]="com.valvesoftware.Steam"
-    ["discord"]="com.discordapp.Discord"
-    ["libreoffice"]="org.libreoffice.LibreOffice"
-    ["kdenlive"]="org.kde.kdenlive"
-    ["flatseal"]="com.github.tchx84.Flatseal"
-    ["obsidian"]="md.obsidian.Obsidian"
-    ["bottles"]="com.usebottles.bottles"
-    ["lutris"]="net.lutris.Lutris"
-    ["wine"]="org.winehq.Wine"
-    ["vlc"]="org.videolan.VLC"
-    ["vesktop"]="dev.vencord.Vesktop"
-)
-
-APPS_FLATPAK=(${FLATPAK_MAPPING[@]})
-
-# Install system packages
-echo "📦 Installing system packages..."
-case "$PACKAGE_MANAGER" in
-    dnf) sudo dnf install -y --skip-unavailable "${APPS_PACKAGE_MANAGER[@]}" ;;
-    pacman) sudo pacman -S --noconfirm "${APPS_PACKAGE_MANAGER[@]}" ;;
-    apt) sudo apt install -y "${APPS_PACKAGE_MANAGER[@]}" ;;
-    brew) brew install ${APPS_PACKAGE_MANAGER[@]} || echo "⚠️  Some packages may not be available on Homebrew." ;;
-esac
-
-# Install Flatpak applications if not on macOS
-if [[ "$PACKAGE_MANAGER" != "brew" ]]; then
-    echo "📦 Installing Flatpak applications..."
-    flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo || true
-    for app in "${!FLATPAK_MAPPING[@]}"; do
-        package_name="${FLATPAK_MAPPING[$app]}"
-        if ! flatpak list --user | grep -q "$package_name"; then
-            echo "🚀 Installing: $app ($package_name)"
-            if ! flatpak install --user -y --noninteractive "$package_name" 2>/tmp/flatpak_error.log; then
-                echo "❌ Failed to install: $app ($package_name)"
-                echo "💡 Command: flatpak install --user -y --noninteractive $package_name"
-                echo "🔍 Error Details:"
-                cat /tmp/flatpak_error.log
-            else
-                echo "✅ Installed: $app ($package_name)"
-            fi
-        else
-            echo "✔ Already installed: $app ($package_name)"
+# Function to check package definition files
+check_package_definitions() {
+    local has_error=false
+    echo "🔍 Checking package definition files..."
+    
+    for pkg_file in "dnf_packages.sh" "apt_packages.sh" "pacman_packages.sh" "flatpak_packages.sh"; do
+        if ! check_file "$PACKAGES_DIR/$pkg_file"; then
+            has_error=true
         fi
     done
+    
+    if [[ "$has_error" == "true" ]]; then
+        echo "❌ Some package definition files are missing or not readable"
+        return 1
+    fi
+    return 0
+}
+
+# Function to check installer scripts
+check_installer_scripts() {
+    local has_error=false
+    echo "🔍 Checking installer scripts..."
+    
+    for installer in "run_install_dnf_packages.sh" "run_install_apt_packages.sh" \
+                    "run_install_pacman_packages.sh" "run_install_flatpak_packages.sh" \
+                    "run_install_1password.sh" "run_install_cursor.sh" "run_install_nerdfonts.sh"; do
+        if ! check_file "$INSTALLERS_DIR/$installer"; then
+            has_error=true
+        fi
+    done
+    
+    if [[ "$has_error" == "true" ]]; then
+        echo "❌ Some installer scripts are missing or not readable"
+        return 1
+    fi
+    return 0
+}
+
+# Function to detect and run package manager installers
+detect_and_run_installers() {
+    local has_package_manager=false
+
+    echo "🔍 Detecting available package managers..."
+
+    # Check and run DNF installer
+    if command -v dnf &>/dev/null; then
+        echo "📦 Found DNF package manager"
+        if [[ "$DRY_RUN" == "true" ]]; then
+            echo "🔍 Would run: $INSTALLERS_DIR/run_install_dnf_packages.sh"
+            source "$PACKAGES_DIR/dnf_packages.sh"
+            echo "📋 Would install packages: $(get_dnf_packages)"
+        else
+            bash "$INSTALLERS_DIR/run_install_dnf_packages.sh"
+        fi
+        has_package_manager=true
+    fi
+
+    # Check and run APT installer
+    if command -v apt &>/dev/null; then
+        echo "📦 Found APT package manager"
+        if [[ "$DRY_RUN" == "true" ]]; then
+            echo "🔍 Would run: $INSTALLERS_DIR/run_install_apt_packages.sh"
+            source "$PACKAGES_DIR/apt_packages.sh"
+            echo "📋 Would install packages: $(get_apt_packages)"
+        else
+            bash "$INSTALLERS_DIR/run_install_apt_packages.sh"
+        fi
+        has_package_manager=true
+    fi
+
+    # Check and run Pacman installer
+    if command -v pacman &>/dev/null; then
+        echo "📦 Found Pacman package manager"
+        if [[ "$DRY_RUN" == "true" ]]; then
+            echo "🔍 Would run: $INSTALLERS_DIR/run_install_pacman_packages.sh"
+            source "$PACKAGES_DIR/pacman_packages.sh"
+            echo "📋 Would install packages: $(get_pacman_packages)"
+        else
+            bash "$INSTALLERS_DIR/run_install_pacman_packages.sh"
+        fi
+        has_package_manager=true
+    fi
+
+    # Check and run Homebrew installer for macOS
+    if [[ "$(uname)" == "Darwin" ]]; then
+        if ! command -v brew &>/dev/null; then
+            if [[ "$DRY_RUN" == "true" ]]; then
+                echo "🔍 Would install Homebrew"
+            else
+                echo "🍺 Installing Homebrew..."
+                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            fi
+        fi
+        # TODO: Add Homebrew packages installer when created
+        has_package_manager=true
+    fi
+
+    # Error if no package manager was found
+    if [[ "$has_package_manager" == "false" ]]; then
+        echo "❌ No supported package manager found. Supported: DNF, APT, Pacman, Homebrew"
+        exit 1
+    fi
+}
+
+# Function to install Flatpak packages if available
+install_flatpak_if_available() {
+    # If Flatpak is installed or we can install it
+    if command -v flatpak &>/dev/null || [[ "$has_package_manager" == "true" ]]; then
+        echo "🚀 Installing Flatpak packages..."
+        if [[ "$DRY_RUN" == "true" ]]; then
+            echo "🔍 Would run: $INSTALLERS_DIR/run_install_flatpak_packages.sh"
+            source "$PACKAGES_DIR/flatpak_packages.sh"
+            echo "📋 Would install Flatpak packages:"
+            for app in "${!FLATPAK_PACKAGES[@]}"; do
+                echo "  - $app (${FLATPAK_PACKAGES[$app]})"
+            done
+        else
+            bash "$INSTALLERS_DIR/run_install_flatpak_packages.sh"
+        fi
+    else
+        echo "⚠️  Flatpak not available and cannot be installed automatically"
+    fi
+}
+
+# Function to install external applications
+install_external_apps() {
+    echo "🌟 Installing external applications..."
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "🔍 Would install external applications:"
+        echo "  - Would run: $INSTALLERS_DIR/run_install_1password.sh"
+        echo "  - Would run: $INSTALLERS_DIR/run_install_cursor.sh"
+        echo "  - Would run: $INSTALLERS_DIR/run_install_nerdfonts.sh"
+    else
+        # Install 1Password
+        bash "$INSTALLERS_DIR/run_install_1password.sh"
+        
+        # Install Cursor IDE
+        bash "$INSTALLERS_DIR/run_install_cursor.sh"
+        
+        # Install NerdFonts
+        bash "$INSTALLERS_DIR/run_install_nerdfonts.sh"
+    fi
+}
+
+# Main execution
+echo "🚀 Starting package bootstrap process..."
+if [[ "$DRY_RUN" == "true" ]]; then
+    echo "⚠️  DRY RUN MODE - No changes will be made"
 fi
 
-# Install NerdFonts
-echo "🎨 Installing NerdFonts..."
-FONT_DIR="$HOME/.local/share/fonts/NerdFonts"
-mkdir -p "$FONT_DIR"
-wget -qO "$FONT_DIR/FiraCode.zip" "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip"
-unzip -qo "$FONT_DIR/FiraCode.zip" -d "$FONT_DIR"
-fc-cache -f
+# First check all required files
+check_package_definitions || exit 1
+check_installer_scripts || exit 1
 
-echo "🎉 System bootstrap completed! Reboot recommended."
+# Then detect and install using native package managers
+detect_and_run_installers
+
+# Then install Flatpak packages if possible
+install_flatpak_if_available
+
+# Finally install external applications
+install_external_apps
+
+if [[ "$DRY_RUN" == "true" ]]; then
+    echo "✨ Dry run completed - all checks passed!"
+else
+    echo "✨ Package bootstrap completed! A reboot is recommended."
+fi

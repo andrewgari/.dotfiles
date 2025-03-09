@@ -54,64 +54,258 @@ check_package_existence() {
     return $?  # Returns 0 if the package exists, otherwise 1
 }
 
-# Install necessary system packages (Excluding VSCode)
-install_packages() {
-    echo "Installing essential packages..."
+# Install package with fallback methods
+install_package() {
+    local package=$1
+    local package_name=$2  # Alternative package name if different from $package
     
-    packages=(
-        git git-extras gh lazygit ghostty docker docker-compose lazydocker android-tools
-        neovim fzf ripgrep bat htop wget unzip tar curl
-    )
-
     if [ "$DRY_RUN" = true ]; then
-        echo "[Dry-Run] Checking availability of packages..."
-        for pkg in "${packages[@]}"; do
-            if check_package_existence "$pkg"; then
-                echo "[✔] $pkg is available in $PM"
-            else
-                echo "[✖] $pkg NOT FOUND in $PM"
-            fi
-        done
-        return
-    fi
-
-    case $PM in
-        yay) yay -S --noconfirm "${packages[@]}" ;;
-        dnf) sudo dnf install -y "${packages[@]}" --skip-unavailable ;;
-        apt) sudo apt update && sudo apt install -y "${packages[@]}" ;;
-        pacman) sudo pacman -S --noconfirm "${packages[@]}" ;;
-        brew) brew install "${packages[@]}" ;;
-        flatpak) echo "[Skipping: Flatpak not needed for system packages]" ;;
-        *) echo "Unsupported package manager."; exit 1 ;;
-    esac
-}
-
-# Install VSCode & Extensions (Only if not already installed)
-install_vscode() {
-    if command -v code &> /dev/null; then
-        echo "VSCode is already installed."
-        return
-    fi
-
-    echo "Installing VSCode..."
-    if [ "$DRY_RUN" = true ]; then
-        echo "[Dry-Run] Checking if VSCode is available..."
-        if check_package_existence "code"; then
-            echo "[✔] VSCode is available in $PM"
+        if check_package_existence "$package"; then
+            echo "[✔] $package is available in $PM"
         else
-            echo "[✖] VSCode NOT FOUND in $PM"
+            echo "[✖] $package NOT FOUND in $PM"
         fi
         return
     fi
 
     case $PM in
-        yay) yay -S --noconfirm code ;;
-        dnf) sudo dnf install -y code ;;
-        apt) sudo apt install -y code ;;
-        pacman) sudo pacman -S --noconfirm code ;;
-        brew) brew install --cask visual-studio-code ;;
-        flatpak) flatpak install -y flathub com.visualstudio.code ;;
+        dnf)
+            if ! sudo dnf install -y "$package" --skip-unavailable; then
+                case $package in
+                    wezterm)
+                        echo "Installing WezTerm from official repository..."
+                        sudo dnf copr enable wez/wezterm
+                        sudo dnf install -y wezterm
+                        ;;
+                    cursor)
+                        echo "Installing Cursor from official repository..."
+                        curl -LO https://download.cursor.sh/latest
+                        chmod +x latest
+                        sudo mv latest /usr/local/bin/cursor
+                        sudo dnf install fuse --skip-unavailable
+                        ;;
+                    lazygit)
+                        echo "Installing lazygit from GitHub releases..."
+                        curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | grep "browser_download_url.*lazygit_.*_Linux_x86_64.tar.gz" | cut -d : -f 2,3 | tr -d \" | wget -qi -
+                        tar xf lazygit_*_Linux_x86_64.tar.gz
+                        sudo install lazygit /usr/local/bin/
+                        rm lazygit lazygit_*_Linux_x86_64.tar.gz
+                        ;;
+                    docker)
+                        echo "Installing Docker from official repository..."
+                        sudo dnf -y install dnf-plugins-core
+                        sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+                        sudo dnf install -y docker-ce docker-ce-cli containerd.io
+                        ;;
+                    lazydocker)
+                        echo "Installing lazydocker from GitHub releases..."
+                        curl -s https://api.github.com/repos/jesseduffield/lazydocker/releases/latest | grep "browser_download_url.*lazydocker_.*_Linux_x86_64.tar.gz" | cut -d : -f 2,3 | tr -d \" | wget -qi -
+                        tar xf lazydocker_*_Linux_x86_64.tar.gz
+                        sudo install lazydocker /usr/local/bin/
+                        rm lazydocker lazydocker_*_Linux_x86_64.tar.gz
+                        ;;
+                    ripgrep)
+                        echo "Installing ripgrep from GitHub releases..."
+                        curl -s https://api.github.com/repos/BurntSushi/ripgrep/releases/latest | grep "browser_download_url.*ripgrep_.*_x86_64-unknown-linux-musl.tar.gz" | cut -d : -f 2,3 | tr -d \" | wget -qi -
+                        tar xf ripgrep_*_x86_64-unknown-linux-musl.tar.gz
+                        sudo install ripgrep_*/rg /usr/local/bin/
+                        rm -rf ripgrep_*
+                        ;;
+                    neovim)
+                        echo "Installing neovim from official repository..."
+                        sudo dnf copr enable -y dperson/neovim
+                        sudo dnf install -y neovim
+                        ;;
+                    wget)
+                        echo "Installing wget..."
+                        sudo dnf install -y wget
+                        ;;
+                    code)
+                        echo "Installing VSCode from official repository..."
+                        sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+                        sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
+                        sudo dnf install -y code
+                        ;;
+                esac
+            fi
+            ;;
+        apt)
+            if ! sudo apt install -y "$package"; then
+                case $package in
+                    claude-code)
+                        echo "Installing Claude Code..."
+                        mkdir -p "$HOME/.local/bin"
+                        curl -s https://raw.githubusercontent.com/anthropics/claude-code/main/install.sh | bash
+                        ;;
+                    lazygit)
+                        echo "Installing lazygit from GitHub releases..."
+                        curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | grep "browser_download_url.*lazygit_.*_Linux_x86_64.tar.gz" | cut -d : -f 2,3 | tr -d \" | wget -qi -
+                        tar xf lazygit_*_Linux_x86_64.tar.gz
+                        sudo install lazygit /usr/local/bin/
+                        rm lazygit lazygit_*_Linux_x86_64.tar.gz
+                        ;;
+                    ghostty)
+                        echo "Installing Ghostty from official repository..."
+                        curl -s https://ghostty.app/install.sh | sh
+                        ;;
+                    docker)
+                        echo "Installing Docker from official repository..."
+                        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                        sudo apt update
+                        sudo apt install -y docker-ce docker-ce-cli containerd.io
+                        ;;
+                    lazydocker)
+                        echo "Installing lazydocker from GitHub releases..."
+                        curl -s https://api.github.com/repos/jesseduffield/lazydocker/releases/latest | grep "browser_download_url.*lazydocker_.*_Linux_x86_64.tar.gz" | cut -d : -f 2,3 | tr -d \" | wget -qi -
+                        tar xf lazydocker_*_Linux_x86_64.tar.gz
+                        sudo install lazydocker /usr/local/bin/
+                        rm lazydocker lazydocker_*_Linux_x86_64.tar.gz
+                        ;;
+                    ripgrep)
+                        echo "Installing ripgrep from GitHub releases..."
+                        curl -s https://api.github.com/repos/BurntSushi/ripgrep/releases/latest | grep "browser_download_url.*ripgrep_.*_x86_64-unknown-linux-musl.tar.gz" | cut -d : -f 2,3 | tr -d \" | wget -qi -
+                        tar xf ripgrep_*_x86_64-unknown-linux-musl.tar.gz
+                        sudo install ripgrep_*/rg /usr/local/bin/
+                        rm -rf ripgrep_*
+                        ;;
+                    neovim)
+                        echo "Installing neovim from official repository..."
+                        sudo add-apt-repository ppa:neovim-ppa/stable
+                        sudo apt update
+                        sudo apt install -y neovim
+                        ;;
+                    wget)
+                        echo "Installing wget..."
+                        sudo apt install -y wget
+                        ;;
+                    code)
+                        echo "Installing VSCode from official repository..."
+                        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+                        sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
+                        sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+                        rm -f packages.microsoft.gpg
+                        sudo apt update
+                        sudo apt install -y code
+                        ;;
+                esac
+            fi
+            ;;
+        pacman)
+            if ! sudo pacman -S --noconfirm "$package"; then
+                case $package in
+                    claude-code)
+                        echo "Installing Claude Code..."
+                        mkdir -p "$HOME/.local/bin"
+                        curl -s https://raw.githubusercontent.com/anthropics/claude-code/main/install.sh | bash
+                        ;;
+                    lazygit)
+                        echo "Installing lazygit from AUR..."
+                        yay -S --noconfirm lazygit
+                        ;;
+                    ghostty)
+                        echo "Installing Ghostty from AUR..."
+                        yay -S --noconfirm ghostty
+                        ;;
+                    docker)
+                        echo "Installing Docker from official repository..."
+                        sudo pacman -S --noconfirm docker
+                        ;;
+                    lazydocker)
+                        echo "Installing lazydocker from AUR..."
+                        yay -S --noconfirm lazydocker
+                        ;;
+                    ripgrep)
+                        echo "Installing ripgrep from official repository..."
+                        sudo pacman -S --noconfirm ripgrep
+                        ;;
+                    neovim)
+                        echo "Installing neovim from official repository..."
+                        sudo pacman -S --noconfirm neovim
+                        ;;
+                    wget)
+                        echo "Installing wget from official repository..."
+                        sudo pacman -S --noconfirm wget
+                        ;;
+                    code)
+                        echo "Installing VSCode from AUR..."
+                        yay -S --noconfirm visual-studio-code-bin
+                        ;;
+                esac
+            fi
+            ;;
+        brew)
+            if ! brew install "$package"; then
+                case $package in
+                    claude-code)
+                        echo "Installing Claude Code..."
+                        brew install anthropics/tap/claude-code
+                        ;;
+                    lazygit)
+                        echo "Installing lazygit from Homebrew..."
+                        brew install lazygit
+                        ;;
+                    ghostty)
+                        echo "Installing Ghostty from Homebrew..."
+                        brew install --cask ghostty
+                        ;;
+                    docker)
+                        echo "Installing Docker from Homebrew..."
+                        brew install --cask docker
+                        ;;
+                    lazydocker)
+                        echo "Installing lazydocker from Homebrew..."
+                        brew install lazydocker
+                        ;;
+                    ripgrep)
+                        echo "Installing ripgrep from Homebrew..."
+                        brew install ripgrep
+                        ;;
+                    neovim)
+                        echo "Installing neovim from Homebrew..."
+                        brew install neovim
+                        ;;
+                    wget)
+                        echo "Installing wget from Homebrew..."
+                        brew install wget
+                        ;;
+                    code)
+                        echo "Installing VSCode from Homebrew..."
+                        brew install --cask visual-studio-code
+                        ;;
+                esac
+            fi
+            ;;
+        flatpak)
+            if ! flatpak install -y flathub "$package"; then
+                case $package in
+                    claude-code)
+                        echo "Installing Claude Code..."
+                        mkdir -p "$HOME/.local/bin"
+                        curl -s https://raw.githubusercontent.com/anthropics/claude-code/main/install.sh | bash
+                        ;;
+                    *)
+                        echo "Package $package not available in Flatpak"
+                        return 1
+                        ;;
+                esac
+            fi
+            ;;
     esac
+}
+
+# Install necessary system packages
+install_packages() {
+    echo "Installing essential packages..."
+    
+    packages=(
+        git git-extras gh lazygit wezterm cursor docker docker-compose lazydocker android-tools
+        neovim fzf ripgrep bat htop wget unzip tar curl code claude-code
+    )
+
+    for pkg in "${packages[@]}"; do
+        install_package "$pkg"
+    done
 }
 
 # Setup Docker
@@ -145,6 +339,7 @@ create_dev_containers() {
         "node-dev node:latest $HOME/dev/node"
         "python-dev python:latest $HOME/dev/python"
         "android-dev ghcr.io/cirruslabs/android-sdk:latest $HOME/dev/android"
+        "claude-dev python:latest $HOME/dev/claude"
     )
 
     for container in "${containers[@]}"; do
@@ -188,10 +383,8 @@ verify_installations() {
 detect_package_manager
 install_packages
 install_docker
-install_vscode
 setup_docker_network
 create_dev_containers
-
 verify_installations
 
 echo "All development tools and configurations have been set up successfully! 🚀"

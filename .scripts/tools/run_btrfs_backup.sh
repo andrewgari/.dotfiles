@@ -28,7 +28,7 @@ setup_btrfs_snapshots() {
     echo "Setting up BTRFS snapshots..."
     HOSTNAME=$(hostname)
 
-    SNAPSHOT_DIR="/home/andrewgari/backups/snapshots/$HOSTNAME"
+    SNAPSHOT_DIR="/var/backups/snapshots/$HOSTNAME"
     SNAPSHOT_PATH="$SNAPSHOT_DIR/snapshot-$(date +%Y%m%d-%H%M%S)"
 
     # Ensure the snapshot directory exists
@@ -42,7 +42,7 @@ push_snapshots_to_unraid() {
     echo "Pushing snapshots to NFS share..."
     HOSTNAME=$(hostname)
     
-    LOCAL_PATH="/home/andrewgari/backups/snapshots/$HOSTNAME/"
+    LOCAL_PATH="/var/backups/snapshots/$HOSTNAME/"
     NFS_PATH="/mnt/unraid/vault/backup/snapshots/$HOSTNAME"
 
     # Ensure the NFS share is mounted
