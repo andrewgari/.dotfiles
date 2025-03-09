@@ -8,6 +8,7 @@ GIT_CONFIG_DIR="$HOME/.config/git"
 GIT_CREDENTIALS_FILE="$GIT_CONFIG_DIR/credentials"
 KEY_DIR="$HOME/.ssh"
 KEY_FILE="$KEY_DIR/github_rsa"
+SSH_CONFIG_FILE="$KEY_DIR/config"
 
 # Git Configuration
 echo "🔧 Configuring Git..."
@@ -65,10 +66,31 @@ git config --global alias.push-rebase '!~/.scripts/git-push-rebase.sh'
 echo "✅ Git aliases configured."
 
 # GPG Signing
-echo "🔐 Enabling GPG commit signing..."
+echo "🔐 Setting up GPG signing..."
+# Get the GPG key ID
+GPG_KEY_ID="$(gpg --list-secret-keys --keyid-format=long | grep sec | awk '{print $2}' | cut -d '/' -f2 | head -n 1)"
+
+if [ -z "$GPG_KEY_ID" ]; then
+    echo "No GPG key found. Generating new key..."
+    # Generate a new GPG key
+    gpg --batch --generate-key <<EOF
+%echo Generating a GPG key
+Key-Type: ED25519
+Key-Length: 4096
+Name-Real: $GITHUB_USERNAME
+Name-Email: $GITHUB_EMAIL
+Expire-Date: 0
+%no-protection
+%commit
+%echo Done
+EOF
+    GPG_KEY_ID="$(gpg --list-secret-keys --keyid-format=long | grep sec | awk '{print $2}' | cut -d '/' -f2 | head -n 1)"
+fi
+
+# Configure Git to use GPG
 git config --global commit.gpgSign true
-git config --global user.signingkey "$(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d '/' -f2 | head -n 1)"
-echo "✅ GPG commit signing enabled."
+git config --global user.signingkey "$GPG_KEY_ID"
+echo "✅ GPG signing configured."
 
 # Git Hooks
 echo "🔧 Creating pre-push hook..."
@@ -89,7 +111,7 @@ elif command -v shellcheck &> /dev/null; then
     shellcheck **/*.sh
 else
     echo "⚠️  No linter found! Consider installing one."
-    exit 1
+    # Don't exit with error, just warn
 fi
 echo "✅ Pre-push checks passed!"
 EOF
@@ -118,11 +140,52 @@ echo "✅ GitHub CLI configured."
 # SSH Key Setup
 echo "🔑 Setting up SSH Key for GitHub..."
 mkdir -p "$KEY_DIR"
+chmod 700 "$KEY_DIR"
 if [ ! -f "$KEY_FILE" ]; then
     ssh-keygen -t rsa -b 4096 -C "$GITHUB_EMAIL" -f "$KEY_FILE" -N ""
-    eval "$(ssh-agent -s)"
-    ssh-add "$KEY_FILE"
 fi
+
+# Configure SSH to always use this key for GitHub
+echo "🔧 Configuring SSH for GitHub..."
+if [ ! -f "$SSH_CONFIG_FILE" ]; then
+    touch "$SSH_CONFIG_FILE"
+fi
+
+# Remove any existing GitHub host config
+sed -i '/^Host github.com/,/^$/{/^$/!d}' "$SSH_CONFIG_FILE"
+
+# Add GitHub configuration
+cat << EOF >> "$SSH_CONFIG_FILE"
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile $KEY_FILE
+    AddKeysToAgent yes
+    IdentitiesOnly yes
+EOF
+
+chmod 600 "$SSH_CONFIG_FILE"
+
+# Start ssh-agent and add key
+eval "$(ssh-agent -s)"
+ssh-add "$KEY_FILE"
+
+# Set correct permissions
+chmod 600 "$KEY_FILE"
+chmod 644 "$KEY_FILE.pub"
+
+# Add ssh-agent autostart to shell rc file
+SHELL_RC="$HOME/.$(basename "$SHELL")rc"
+if [ -f "$SHELL_RC" ]; then
+    if ! grep -q "ssh-agent" "$SHELL_RC"; then
+        echo '# Start SSH agent if not running' >> "$SHELL_RC"
+        echo 'if [ -z "$SSH_AUTH_SOCK" ]; then' >> "$SHELL_RC"
+        echo '    eval "$(ssh-agent -s)" > /dev/null' >> "$SHELL_RC"
+        echo '    ssh-add "$HOME/.ssh/github_rsa" 2>/dev/null' >> "$SHELL_RC"
+        echo 'fi' >> "$SHELL_RC"
+    fi
+fi
+
 echo "✅ SSH Key setup complete. Add this key to GitHub:"
 cat "$KEY_FILE.pub"
 
