@@ -86,14 +86,3 @@ format = '([$all_status$ahead_behind]($style) )'
 min_time = 500
 format = "took [$duration](bold yellow)"
 
-# DNF updates checker
-[custom.dnf_updates]
-command = "dnf check-update -q | grep -v '^
- | wc -l"
-when = "which dnf"
-symbol = "📦 "
-style = "bold red"
-format = "[$symbol($output updates)]($style) "
-shell = ["bash", "--noprofile", "--norc"]
-ignore_timeout = true
-interval = 10800 # Check every 3 hours
