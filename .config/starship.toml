@@ -29,23 +29,6 @@ default = ""
 format = "[$env_value]($style) "
 style = "bold blue"
 
-# Example of how to set this in your shell profile:
-# export STARSHIP_OS="$(case "$(uname -s)" in
-#   Darwin*) echo ""; ;;  # macOS (Apple)
-#   Linux*) 
-#     if [ -f /etc/os-release ]; then
-#       if grep -q "Ubuntu" /etc/os-release; then echo ""; # Ubuntu
-#       elif grep -q "Debian" /etc/os-release; then echo ""; # Debian
-#       elif grep -q "Arch" /etc/os-release; then echo ""; # Arch
-#       elif grep -q "Fedora" /etc/os-release; then echo ""; # Fedora
-#       else echo ""; # Generic Linux
-#       fi
-#     else echo ""; # Generic Linux
-#     fi ;;
-#   CYGWIN*|MINGW*|MSYS*) echo ""; ;; # Windows
-#   *) echo ""; ;; # Unknown
-# esac)"
-
 # Hostname
 [hostname]
 ssh_only = false
