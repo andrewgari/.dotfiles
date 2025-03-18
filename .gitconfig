@@ -1,12 +1,8 @@
 [user]
 	name = andrewgari
 	email = covadax.ag@gmail.com
-	signingkey = C1E895BBA44D6EEF
 [core]
 	editor = nvim
-	pager = delta --dark --syntax-theme=Monokai
-	hooksPath = /home/andrewgari/.git-hooks
-	sshCommand = ssh -i ~/.ssh/github_rsa
 [credential]
 	helper = store
 [init]
