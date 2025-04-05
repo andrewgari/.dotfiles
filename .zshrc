@@ -3,6 +3,13 @@
 export EDITOR=nvim
 export VISUAL=nvim
 
+# Start ssh-agent if not already running
+if [ -z "$SSH_AUTH_SOCK" ]; then
+   # Check if ssh-agent is already running
+   eval "$(ssh-agent -s)"
+   ssh-add ~/.ssh/github_rsa
+fi
+
 # ---------
 # Detect OS & Package Manager
 if [ -f /etc/os-release ]; then
