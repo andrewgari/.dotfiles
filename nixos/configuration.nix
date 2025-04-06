@@ -17,6 +17,7 @@ in
    [ # Include the results of the hardware scan.
      ./hardware-configuration.nix
      ./git.nix
+     ./framework.nix # Framework laptop specific configuration
      (import "${home-manager}/nixos") # Import Home Manager this way
    ];
 
