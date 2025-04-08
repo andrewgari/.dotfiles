@@ -573,13 +573,6 @@ alias pip="pip3"
 alias venv="python3 -m venv venv"
 alias activate="source venv/bin/activate"
 
-# Quickly serve current directory
-serve() {
-    local port=${1:-8000}
-    echo "Serving on http://localhost:$port"
-    python3 -m http.server $port
-}
-
 # -----------------------------
 # Zoxide Smart Navigation
 # -----------------------------
@@ -625,75 +618,5 @@ alias system_migrate="$SCRIPTS_DIR/run_system_migration.sh"
 alias watch_directory="$SCRIPTS_DIR/run_watch_directory.sh"
 
 chmod +x $SCRIPTS_DIR/*.sh
-
-fix_nvim_zsh() {
-    echo "🚨 Removing Lazy.nvim, zsh-autosuggestions, and zsh-syntax-highlighting..."
-
-    # Remove Lazy.nvim and its related directories
-    rm -rf ~/.local/share/nvim/lazy
-    rm -rf ~/.local/state/nvim
-    rm -rf ~/.cache/nvim
-    rm -rf ~/.config/nvim/lazy-lock.json
-
-    # Remove zsh-autosuggestions and zsh-syntax-highlighting
-    rm -rf ~/.zsh/zsh-autosuggestions
-    rm -rf ~/.zsh/zsh-syntax-highlighting
-
-    # Reset any potential broken zsh settings
-    sed -i '/zsh-autosuggestions/d' ~/.zshrc
-    sed -i '/zsh-syntax-highlighting/d' ~/.zshrc
-
-    # Reload zsh config
-    source ~/.zshrc
-
-    echo "✅ All traces removed!"
-    echo ""
-    echo "🚀 Starting reinstallation..."
-
-    # Ensure .zsh directory exists
-    mkdir -p ~/.zsh
-
-    # Install Lazy.nvim
-    echo "📥 Installing Lazy.nvim..."
-    git clone --filter=blob:none --single-branch https://github.com/folke/lazy.nvim ~/.local/share/nvim/lazy/lazy.nvim
-
-    # Install zsh-autosuggestions
-    echo "📥 Installing zsh-autosuggestions..."
-    git clone https://github.com/zsh-users/zsh-autosuggestions ~/.zsh/zsh-autosuggestions
-
-    # Install zsh-syntax-highlighting
-    echo "📥 Installing zsh-syntax-highlighting..."
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.zsh/zsh-syntax-highlighting
-
-    # Add plugins back to .zshrc if missing
-    if ! grep -q "source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" ~/.zshrc; then
-        echo 'source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh' >> ~/.zshrc
-    fi
-    if ! grep -q "source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ~/.zshrc; then
-        echo 'source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh' >> ~/.zshrc
-    fi
-
-    # Reload shell
-    echo "🔄 Reloading Zsh..."
-    source ~/.zshrc
-
-    # Run Lazy.nvim update
-    echo "🔄 Running Lazy.nvim update..."
-    nvim --headless "+Lazy! sync" +qa
-
-    # Install essential LSPs
-    echo "🔧 Installing LSPs..."
-    nvim --headless -c "MasonInstall lua-language-server pyright tsserver gopls rust-analyzer bash-language-server json-lsp yaml-language-server html-lsp css-lsp" -c "q"
-
-    # Install treesitter parsers
-    echo "🌳 Installing Treesitter parsers..."
-    nvim --headless -c "TSInstallSync lua python typescript go rust bash json yaml html css markdown kotlin java" -c "q"
-
-    # Install additional Neovim plugins
-    echo "📦 Installing popular Neovim plugins..."
-    nvim --headless -c "Lazy! sync" -c "q"
-
-    echo "✅ Reinstallation complete! Everything is now fresh and up to date."
-}
 
 alias chrome="google-chrome-stable --ozone-platform=wayland"
