@@ -1,13 +1,4 @@
-{ config, pkgs, lib, ... }:
-
-let
-  unstable = import (fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz";
-    sha256 = "0lbn29dn647kgf3g3nzch8an3m0gn2ysrmq8l7q6lzc8lgwgif8p";
-  }) {
-    config = { allowUnfree = true; };
-  };
-in
+{ config, pkgs, lib, unstable, ... }:
 
 {
   # Home Manager needs a bit of info about you and the paths it should manage
