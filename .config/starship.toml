@@ -29,7 +29,6 @@ $python\
 $rust\
 $golang\
 $java\
-$docker\
 $cmd_duration\
 $line_break\
 $character"""
@@ -101,11 +100,11 @@ style = "fg:#b16286" # Purple
 format = '[ $symbol($version) ]($style)'
 disabled = false
 
-[docker]
-symbol = "" # nf-linux-docker
-style = "fg:#458588" # Blue
-format = '[ $symbol($context) ]($style)'
-disabled = false
+#[docker]
+#symbol = "" # nf-linux-docker
+#style = "fg:#458588" # Blue
+#format = '[ $symbol($context) ]($style)'
+#disabled = false
 
 # User@Host module - Subtle grey
 [username]
@@ -129,3 +128,4 @@ vimcmd_symbol = "[❮](bold fg:#d79921)" # Yellow arrow in Vim mode
 vimcmd_replace_one_symbol = "[❮](bold fg:#b16286)" # Purple arrow in Vim replace mode
 vimcmd_replace_symbol = "[❮](bold fg:#b16286)" # Purple arrow in Vim replace mode
 vimcmd_visual_symbol = "[❮](bold fg:#458588)" # Blue arrow in Vim visual mode
+
