@@ -14,24 +14,24 @@ add_newline = true
 # - $cmd_duration: Duration of the last command
 # - $line_break: Moves to the next line
 # - $character: The prompt symbol (❯)
+# Inside the [directory] section of your simplified starship.toml
+# Replace the simple format line with this one:
 format = """\
-[](fg:#a89984)\
+[╭─](fg:#928374)\
 $username\
-[@](fg:#ebdbb2)\
 $hostname\
-[](fg:#a89984)\
+[│](fg:#928374)\
 $directory\
+[│](fg:#928374)\
 $git_branch\
 $git_status\
-$package\
 $nodejs\
 $python\
 $rust\
 $golang\
 $java\
-$cmd_duration\
-$line_break\
-$character"""
+$cmd_duration
+[╰─](fg:#928374)$character"""
 
 # Timeout for commands execution time module (milliseconds)
 [cmd_duration]
