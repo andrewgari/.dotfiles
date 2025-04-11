@@ -15,37 +15,43 @@ end
 -- config.enable_kitty_keyboard_protocol = false
 -- config.enable_csi_u_key_encoding = false -- Try disabling CSI u codes instead
 
--- ========= Background Image (Corrected & Cleaned) =========
+-- ========= Background Image (Corrected & Cleaned - Using io.open check) =========
 
 -- Get the directory where the configuration file is located (~/.wezterm.lua -> points to home dir)
 local config_dir = wezterm.config_dir or ""
 
 -- Construct the path relative to the configuration file directory
--- *** ENSURE YOUR FILE IS ACTUALLY NAMED background.png ***
 local image_filename = "background.png" -- Make sure this matches your actual file name
 local background_image_path = config_dir .. "/" .. image_filename
 
 -- Add logging to see exactly what path is being checked
 wezterm.log_info("Checking for background image at path: " .. background_image_path)
 
--- Check if the file exists before setting it using wezterm.path.exists
-if wezterm.path.exists(background_image_path) then
+-- Check if the file exists before setting it using io.open
+local f = io.open(background_image_path, "r")
+if f then
+	-- File exists! Close the handle.
+	f:close()
 	wezterm.log_info("Background image FOUND! Applying: " .. background_image_path)
 	config.window_background_image = background_image_path
 
 	-- Dim the background image (Using 1.0 brightness for TESTING!)
 	config.window_background_image_hsb = {
-		brightness = 1.0, -- Use 1.0 (full brightness) for testing! Adjust later (e.g., 0.3).
+		brightness = 0.3, -- Use 1.0 (full brightness) for testing! Adjust later (e.g., 0.3).
 		hue = 1.0,
 		saturation = 1.0,
 	}
 else
-	-- Log an error if not found
+	-- File does not exist or isn't readable.
 	wezterm.log_error(
-		"Background image NOT FOUND at: " .. background_image_path .. " (config_dir was: " .. config_dir .. ")"
+		"Background image NOT FOUND or not readable at: "
+			.. background_image_path
+			.. " (config_dir was: "
+			.. config_dir
+			.. ")"
 	)
 end
-
+-- (Rest of the config follows...)
 -- ========= Theme and Appearance =========
 
 config.color_scheme = "Gruvbox dark, hard (base16)" -- Feel free to change this
@@ -57,6 +63,12 @@ config.font = wezterm.font_with_fallback({
 	"Noto Color Emoji",
 })
 config.font_size = 11.0
+
+-- Makes the WHOLE window semi-transparent
+-- 1.0 = Opaque (Default)
+-- 0.0 = Fully Transparent (Invisible)
+-- Values between 0.7 and 0.95 are common for transparency.
+config.window_background_opacity = 0.25 -- Adjust this value to your liking
 
 -- Enable font ligatures
 config.harfbuzz_features = { "calt=1", "clig=1", "liga=1" }

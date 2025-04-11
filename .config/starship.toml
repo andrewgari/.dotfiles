@@ -1,74 +1,131 @@
-format = """
-[░▒▓](#a3aed2)\
-[ $os.symbol ](bg:#a3aed2 fg:#090c0c)\
-[](bg:#769ff0 fg:#a3aed2)\
+# ~/.config/starship.toml
+
+# Inserts a blank line between shell prompts
+add_newline = true
+
+# Set default format order for the prompt
+# Explanation:
+# - $username, $hostname: User and machine info
+# - $directory: Current directory
+# - $git_branch, $git_status: Git information
+# - Language modules (python, node, rust, etc.)
+# - $docker: Docker context
+# - $package: Project version (npm, cargo)
+# - $cmd_duration: Duration of the last command
+# - $line_break: Moves to the next line
+# - $character: The prompt symbol (❯)
+format = """\
+[](fg:#a89984)\
+$username\
+[@](fg:#ebdbb2)\
+$hostname\
+[](fg:#a89984)\
 $directory\
-[](fg:#769ff0 bg:#394260)\
 $git_branch\
 $git_status\
-[](fg:#394260 bg:#212736)\
+$package\
 $nodejs\
+$python\
 $rust\
 $golang\
-$php\
-[](fg:#212736 bg:#1d2230)\
-$time\
-[ ](fg:#1d2230)\
-\n$character"""
+$java\
+$docker\
+$cmd_duration\
+$line_break\
+$character"""
 
-[os]
+# Timeout for commands execution time module (milliseconds)
+[cmd_duration]
+min_time = 500 # Show only for commands taking 500ms or more
+format = " took [$duration](fg:#d79921)"
 disabled = false
-style = "fg:#e3e5e5 bg:#769ff0"
-format = '[ $symbol ]($style)'
-symbols.Macos = "  "
-symbols.Fedora = "  "
-symbols.NixOS = "  "
-symbols.EndeavourOS = "  "
-symbols.Arch = " 󰣇 "
 
+# Directory module
 [directory]
-style = "fg:#e3e5e5 bg:#769ff0"
+style = "fg:#458588" # Blueish
 format = "[ $path ]($style)"
-truncation_length = 3
-truncation_symbol = "…/"
+truncation_length = 4 # Show only the last 4 directories
+truncate_to_repo = true # Truncate to repo root if possible
+fish_style_pwd_dir_length = 1 # Show only the first letter of parent directories
 
-[directory.substitutions]
-"Documents" = "󰈙 "
-"Downloads" = " "
-"Music" = " "
-"Pictures" = " "
-
+# Git branch module
 [git_branch]
-symbol = ""
-style = "bg:#394260"
-format = '[[ $symbol $branch ](fg:#769ff0 bg:#394260)]($style)'
+symbol = "" # nf-fa-code_fork (Branch symbol)
+style = "fg:#98971a" # Green
+format = "[ $symbol $branch ]($style)"
 
+# Git status module
 [git_status]
-style = "bg:#394260"
-format = '[[($all_status$ahead_behind )](fg:#769ff0 bg:#394260)]($style)'
+style = "fg:#98971a" # Green
+format = "[$all_status$ahead_behind]($style)"
+conflicted = "[=$count](fg:#cc241d)" # Red
+ahead = "[⇡$count](fg:#689d6a)" # Aqua
+behind = "[⇣$count](fg:#b16286)" # Purple
+diverged = "[⇕⇡$ahead_count⇣$behind_count](fg:#d65d0e)" # Orange
+untracked = "[?$count](fg:#d79921)" # Yellow
+stashed = "[*$count](fg:#458588)" # Blue
+modified = "[!$count](fg:#d79921)" # Yellow
+staged = "[+$count](fg:#98971a)" # Green
+renamed = "[»$count](fg:#b16286)" # Purple
+deleted = "[✘$count](fg:#cc241d)" # Red
 
+# Language Modules - Using Gruvbox colors
 [nodejs]
-symbol = ""
-style = "bg:#212736"
-format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+symbol = "" # nf-seti-nodejs
+style = "fg:#689d6a" # Aqua
+format = '[ $symbol($version) ]($style)'
+
+[python]
+symbol = "" # nf-seti-python
+style = "fg:#458588" # Blue
+format = '[ $symbol($version) ]($style)'
 
 [rust]
-symbol = ""
-style = "bg:#212736"
-format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+symbol = "" # nf-dev-rust
+style = "fg:#d65d0e" # Orange
+format = '[ $symbol($version) ]($style)'
 
 [golang]
-symbol = ""
-style = "bg:#212736"
-format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+symbol = "" # nf-seti-go
+style = "fg:#689d6a" # Aqua
+format = '[ $symbol($version) ]($style)'
 
-[php]
-symbol = ""
-style = "bg:#212736"
-format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+[java]
+symbol = "" # nf-custom-java
+style = "fg:#cc241d" # Red
+format = '[ $symbol($version) ]($style)'
 
-[time]
+[package] # Shows package version (npm, cargo, etc.)
+symbol = "" # nf-oct-package
+style = "fg:#b16286" # Purple
+format = '[ $symbol($version) ]($style)'
 disabled = false
-time_format = "%R" # Hour:Minute Format
-style = "bg:#1d2230"
-format = '[[  $time ](fg:#a0a9cb bg:#1d2230)]($style)'
+
+[docker]
+symbol = "" # nf-linux-docker
+style = "fg:#458588" # Blue
+format = '[ $symbol($context) ]($style)'
+disabled = false
+
+# User@Host module - Subtle grey
+[username]
+style_user = "fg:#a89984" # Grey
+style_root = "fg:#cc241d bg:#282828" # Red background for root
+format = "[$user]($style)"
+show_always = true # Keep consistent spacing
+
+[hostname]
+style = "fg:#a89984" # Grey
+ssh_only = false # Show hostname always (set to true to show only over SSH)
+format = "[$hostname]($style)"
+trim_at = "." # Trim domain name
+disabled = false # Set to true to disable hostname completely
+
+# Prompt character
+[character]
+success_symbol = "[❯](bold fg:#98971a)" # Green arrow for success
+error_symbol = "[❯](bold fg:#cc241d)" # Red arrow for error
+vimcmd_symbol = "[❮](bold fg:#d79921)" # Yellow arrow in Vim mode
+vimcmd_replace_one_symbol = "[❮](bold fg:#b16286)" # Purple arrow in Vim replace mode
+vimcmd_replace_symbol = "[❮](bold fg:#b16286)" # Purple arrow in Vim replace mode
+vimcmd_visual_symbol = "[❮](bold fg:#458588)" # Blue arrow in Vim visual mode
