@@ -4,7 +4,8 @@ local act = wezterm.action -- Action API alias
 
 -- This table will hold the configuration
 local config = {}
-
+config.enable_kitty_keyboard_protocol = true
+-- or potentially settings related to 'modifyOtherKeys'
 -- In newer versions of Wezterm, use the config_builder which allows applying
 -- multiple defaults sources.
 if wezterm.config_builder then
@@ -173,7 +174,6 @@ end
 -- ========= Status Bar =========
 -- (Using the same status bar setup as before)
 config.enable_tab_bar = true
-
 local function get_git_branch()
 	local success, stdout, _ = wezterm.run_child_process({ "git", "rev-parse", "--abbrev-ref", "HEAD" })
 	if success then
