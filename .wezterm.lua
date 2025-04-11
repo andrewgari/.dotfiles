@@ -1,257 +1,234 @@
+-- Pull in the wezterm API
 local wezterm = require("wezterm")
+local act = wezterm.action -- Action API alias
+
+-- This table will hold the configuration
 local config = {}
 
--- Tokyo Night palette based on theme
-local tokyonight_colors = {
-	fg = "#c0caf5", -- Foreground text
-	fg_dark = "#a9b1d6", -- Darker foreground
-	bg = "#1a1b26", -- Main background
-	bg_dark = "#16161e", -- Darker background (status line)
-	bg_highlight = "#292e42", -- Selection background
-	terminal_black = "#414868", -- Muted text/comments
-	blue = "#7aa2f7", -- Bright blue
-	cyan = "#7dcfff", -- Cyan/Aqua
-	green = "#9ece6a", -- Green
-	orange = "#ff9e64", -- Orange
-	magenta = "#bb9af7", -- Purple/Magenta
-	red = "#f7768e", -- Red
-	yellow = "#e0af68", -- Yellow
-}
+-- In newer versions of Wezterm, use the config_builder which allows applying
+-- multiple defaults sources.
+if wezterm.config_builder then
+	config = wezterm.config_builder()
+end
 
--- Create our custom Tokyo Night theme
-config.color_schemes = {
-	["TokyoNightRainbow"] = {
-		-- Base colors
-		foreground = tokyonight_colors.fg,
-		background = tokyonight_colors.bg,
-		cursor_bg = tokyonight_colors.fg,
-		cursor_fg = tokyonight_colors.bg,
-		cursor_border = tokyonight_colors.fg,
+-- ========= Background Image =========
 
-		-- Selection
-		selection_fg = tokyonight_colors.fg,
-		selection_bg = tokyonight_colors.bg_highlight,
+-- IMPORTANT: Replace this path with the ACTUAL path where you saved the image!
+local background_image_path = "./wallpaper.png" -- Linux/macOS example
+-- ========= Background Image =========
 
-		-- The 16 ANSI colors
-		ansi = {
-			tokyonight_colors.bg_dark, -- black
-			tokyonight_colors.red, -- red
-			tokyonight_colors.green, -- green
-			tokyonight_colors.yellow, -- yellow
-			tokyonight_colors.blue, -- blue
-			tokyonight_colors.magenta, -- magenta/purple
-			tokyonight_colors.cyan, -- cyan
-			tokyonight_colors.fg_dark, -- white (but actually gray)
-		},
+-- IMPORTANT: Replace this path with the ACTUAL path where you saved the image!
+-- local background_image_path = 'C:\\Users\\YourUser\\Pictures\\image_bf0ab3.jpg' -- Windows example
 
-		brights = {
-			tokyonight_colors.terminal_black, -- bright black
-			"#ff7a93", -- bright red
-			"#b9f27c", -- bright green
-			"#ff9e64", -- bright yellow/orange
-			"#7da6ff", -- bright blue
-			"#bb9af7", -- bright magenta/purple
-			"#0db9d7", -- bright cyan
-			"#c0caf5", -- bright white
-		},
+-- Check if the file exists before setting it
+local f = io.open(background_image_path, "r")
+if f then
+	config.window_background_image = background_image_path
 
-		-- Tab bar
-		tab_bar = {
-			background = tokyonight_colors.bg_dark,
-			active_tab = {
-				bg_color = tokyonight_colors.blue,
-				fg_color = tokyonight_colors.bg_dark,
-			},
-			inactive_tab = {
-				bg_color = tokyonight_colors.bg_dark,
-				fg_color = tokyonight_colors.fg_dark,
-			},
-			inactive_tab_hover = {
-				bg_color = tokyonight_colors.bg_highlight,
-				fg_color = tokyonight_colors.fg,
-			},
-			new_tab = {
-				bg_color = tokyonight_colors.bg_dark,
-				fg_color = tokyonight_colors.fg_dark,
-			},
-			new_tab_hover = {
-				bg_color = tokyonight_colors.orange,
-				fg_color = tokyonight_colors.bg_dark,
-			},
-		},
-	},
-}
+	-- NOTE: The 'window_background_image_scale' option caused an error and has been removed.
+	-- Wezterm will use its default scaling method for the image.
 
--- Use our custom color scheme
-config.color_scheme = "TokyoNightRainbow"
+	-- Dim the background image to make text more readable
+	-- Brightness: 0.0 (black) to 1.0 (original). Lower values dim more.
+	config.window_background_image_hsb = {
+		brightness = 0.3, -- Adjust this value (0.1 to 0.5 is usually good)
+		hue = 1.0,
+		saturation = 1.0,
+	}
 
--- Rainbow-like status bar setup to match Starship's look
-config.enable_tab_bar = true
-config.use_fancy_tab_bar = false
-config.tab_bar_at_bottom = true
-config.show_tab_index_in_tab_bar = false
-config.hide_tab_bar_if_only_one_tab = false
+	-- Optional: Set text background opacity
+	-- If text is still hard to read, make the cell background less transparent
+	-- config.text_background_opacity = 0.5
 
--- Configure status bar to have a Powerline appearance like Starship's rainbow
-wezterm.on("update-status", function(window, pane)
-	-- Define powerline symbols
-	local SOLID_LEFT_ARROW = utf8.char(0xe0b2)
-	local SOLID_RIGHT_ARROW = utf8.char(0xe0b0)
+	f:close() -- Close the file handle
+else
+	wezterm.log_error("Background image file not found at: " .. background_image_path)
+end
 
-	-- Get basic info
-	local basename = function(s)
-		-- Extract basename from a path
-		return string.gsub(s, "(.*[/\\])(.*)", "%2")
-	end
+-- ========= Theme and Appearance =========
+-- (Rest of the config follows...)
+-- local background_image_path = 'C:\\Users\\YourUser\\Pictures\\image_bf0ab3.jpg' -- Windows example
 
-	local cwd = basename(pane:get_current_working_dir():gsub("file://", ""))
-	local host = wezterm.hostname()
-	local time = wezterm.strftime("%H:%M")
+-- Check if the file exists before setting it
+local f = io.open(background_image_path, "r")
+if f then
+	config.window_background_image = background_image_path
+	-- Optional: Control how the image scales
+	-- "Scale" - Scale preserving aspect ratio (may leave borders)
+	-- "Cover" - Scale to cover the whole area (may crop)
+	-- "Tile"  - Repeat the image
+	-- "Stretch" - Stretch to fill (distorts aspect ratio)
+	config.window_background_image_scale = "Cover" -- Try "Cover" or "Scale"
 
-	-- Get workspace name if any
-	local workspace = window:active_workspace()
+	-- Dim the background image to make text more readable
+	-- Brightness: 0.0 (black) to 1.0 (original). Lower values dim more.
+	-- Saturation/Hue: 1.0 is original color.
+	config.window_background_image_hsb = {
+		brightness = 0.3, -- Adjust this value (0.1 to 0.5 is usually good)
+		hue = 1.0,
+		saturation = 1.0,
+	}
 
-	-- Format the status line with rainbow segments similar to Starship
-	local status = {}
+	-- Optional: Set text background opacity
+	-- If text is still hard to read, make the cell background less transparent
+	-- 0.0 is fully transparent, 1.0 is fully opaque
+	-- config.text_background_opacity = 0.5
 
-	-- Left status (mimics Starship's left prompt)
-	table.insert(status, {
-		Background = { Color = tokyonight_colors.red },
-		Foreground = { Color = tokyonight_colors.bg_dark },
-		Text = " " .. host .. " ",
-	})
+	f:close() -- Close the file handle
+else
+	wezterm.log_error("Background image file not found at: " .. background_image_path)
+end
 
-	table.insert(status, {
-		Background = { Color = tokyonight_colors.yellow },
-		Foreground = { Color = tokyonight_colors.red },
-		Text = SOLID_RIGHT_ARROW,
-	})
+-- ========= Theme and Appearance =========
 
-	table.insert(status, {
-		Background = { Color = tokyonight_colors.yellow },
-		Foreground = { Color = tokyonight_colors.bg_dark },
-		Text = " " .. cwd .. " ",
-	})
+-- Choose a color scheme. A less busy one might work better with a background image.
+-- Maybe try something like 'Gruvbox dark, hard (base16)', 'Nord', or a simpler one.
+-- Or stick with your preference and adjust dimming/opacity above.
+config.color_scheme = "Gruvbox dark, hard (base16)" -- Example, change if needed
 
-	table.insert(status, {
-		Background = { Color = tokyonight_colors.green },
-		Foreground = { Color = tokyonight_colors.yellow },
-		Text = SOLID_RIGHT_ARROW,
-	})
-
-	table.insert(status, {
-		Background = { Color = tokyonight_colors.green },
-		Foreground = { Color = tokyonight_colors.bg_dark },
-		Text = " " .. workspace .. " ",
-	})
-
-	table.insert(status, {
-		Background = { Color = tokyonight_colors.cyan },
-		Foreground = { Color = tokyonight_colors.green },
-		Text = SOLID_RIGHT_ARROW,
-	})
-
-	-- Right status
-	table.insert(status, {
-		Background = { Color = tokyonight_colors.bg_dark },
-		Foreground = { Color = tokyonight_colors.blue },
-		Text = SOLID_LEFT_ARROW,
-	})
-
-	table.insert(status, {
-		Background = { Color = tokyonight_colors.bg_dark },
-		Foreground = { Color = tokyonight_colors.fg },
-		Text = " " .. time .. " ",
-	})
-
-	window:set_right_status(wezterm.format(status))
-end)
-
--- Font configuration
+-- Font configuration (using FiraCode Nerd Font as example)
 config.font = wezterm.font_with_fallback({
-	"JetBrains Mono",
 	"FiraCode Nerd Font",
+	"Symbols Nerd Font Mono",
+	"Noto Color Emoji",
 })
-config.font_size = 12.0
-config.line_height = 1.1
+config.font_size = 11.0
 
--- Window appearance
+-- Enable font ligatures
+config.harfbuzz_features = { "calt=1", "clig=1", "liga=1" }
+
+-- Window padding
 config.window_padding = {
-	left = "1cell",
-	right = "1cell",
-	top = "0.5cell",
-	bottom = "0.5cell",
+	left = 10,
+	right = 10,
+	top = 10,
+	bottom = 5,
 }
 
--- Let's make it a bit transparent to show off
-config.window_background_opacity = 0.92
-config.text_background_opacity = 1.0
+-- Tab bar settings
+config.use_fancy_tab_bar = true
+config.hide_tab_bar_if_only_one_tab = true
 
--- Optional subtle background image for more Tokyo vibes
--- Uncomment these lines and provide your own background image path if desired
--- config.window_background_image = '/path/to/your/tokyo-skyline.jpg'
--- config.window_background_image_hsb = {
---   brightness = 0.02,
---   hue = 1.0,
---   saturation = 1.0,
--- }
-
--- Keybindings for workspaces (optional)
+-- ========= Keybindings =========
+-- (Using the same keybindings as the previous example)
+wezterm.log_info("Using custom keybindings")
 config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 1000 }
+
 config.keys = {
-	-- Switch between workspaces
+	-- macOS Option key as Meta
+	{ key = "LeftArrow", mods = "OPT", action = act.SendString("\x1bb") },
+	{ key = "RightArrow", mods = "OPT", action = act.SendString("\x1bf") },
+	-- Pane Splitting
+	{ key = "%", mods = "SHIFT|ALT", action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }) },
+	{ key = '"', mods = "SHIFT|ALT", action = act.SplitVertical({ domain = "CurrentPaneDomain" }) },
+	-- Pane Navigation
+	{ key = "h", mods = "ALT", action = act.ActivatePaneDirection("Left") },
+	{ key = "j", mods = "ALT", action = act.ActivatePaneDirection("Down") },
+	{ key = "k", mods = "ALT", action = act.ActivatePaneDirection("Up") },
+	{ key = "l", mods = "ALT", action = act.ActivatePaneDirection("Right") },
+	-- Pane Resizing
+	{ key = "H", mods = "LEADER|SHIFT", action = act.AdjustPaneSize({ "Left", 5 }) },
+	{ key = "J", mods = "LEADER|SHIFT", action = act.AdjustPaneSize({ "Down", 5 }) },
+	{ key = "K", mods = "LEADER|SHIFT", action = act.AdjustPaneSize({ "Up", 5 }) },
+	{ key = "L", mods = "LEADER|SHIFT", action = act.AdjustPaneSize({ "Right", 5 }) },
+	-- Pane Management
+	{ key = "z", mods = "ALT", action = act.TogglePaneZoomState },
+	{ key = "x", mods = "ALT", action = act.CloseCurrentPane({ confirm = true }) },
+	-- Tab Navigation
+	{ key = "[", mods = "ALT", action = act.ActivateTabRelative(-1) },
+	{ key = "]", mods = "ALT", action = act.ActivateTabRelative(1) },
+	{ key = "n", mods = "ALT", action = act.ShowTabNavigator },
+	-- Tab Management
+	{ key = "t", mods = "SUPER", action = act.SpawnTab("CurrentPaneDomain") },
+	{ key = "w", mods = "SUPER", action = act.CloseCurrentTab({ confirm = true }) },
+	{ key = "Tab", mods = "CTRL", action = act.ActivateTabRelative(1) },
+	{ key = "Tab", mods = "CTRL|SHIFT", action = act.ActivateTabRelative(-1) },
+	-- Copy/Paste
+	{ key = "c", mods = "SUPER", action = act.CopyTo("Clipboard") },
+	{ key = "v", mods = "SUPER", action = act.PasteFrom("Clipboard") },
+	-- Font size
+	{ key = "+", mods = "CTRL", action = act.IncreaseFontSize },
+	{ key = "-", mods = "CTRL", action = act.DecreaseFontSize },
+	{ key = "0", mods = "CTRL", action = act.ResetFontSize },
+	-- Scrollback
+	{ key = "PageUp", mods = "SHIFT", action = act.ScrollByPage(-1) },
+	{ key = "PageDown", mods = "SHIFT", action = act.ScrollByPage(1) },
+	-- Launchers
+	{ key = "L", mods = "CTRL|SHIFT", action = act.ShowLauncher },
+	{ key = "P", mods = "CTRL|SHIFT", action = act.ActivateCommandPalette },
+	-- URL Selection
 	{
-		key = "w",
-		mods = "LEADER",
-		action = wezterm.action.ShowLauncherArgs({ flags = "WORKSPACES" }),
-	},
-	-- Create a new workspace
-	{
-		key = "n",
-		mods = "LEADER",
-		action = wezterm.action.PromptInputLine({
-			description = "Enter name for new workspace",
-			action = wezterm.action_callback(function(window, pane, line)
-				if line then
-					window:perform_action(
-						wezterm.action.SwitchToWorkspace({
-							name = line,
-						}),
-						pane
-					)
-				end
+		key = "u",
+		mods = "CTRL|SHIFT",
+		action = act.QuickSelectArgs({
+			label = "open url",
+			patterns = { "\\b\\w+://(?:[\\w.-]+|\\ P {Ip_Address})(?::\\d+)?(?:/\\S*)?" },
+			action = wezterm.action_callback(function(window, pane)
+				local url = window:get_selection_text_for_pane(pane)
+				wezterm.log_info("Opening URL: " .. url)
+				wezterm.open_with(url)
 			end),
 		}),
 	},
 }
+-- Add bindings for Super+1..9
+for i = 1, 9 do
+	table.insert(config.keys, { key = tostring(i), mods = "SUPER", action = act.ActivateTab(i - 1) })
+end
 
--- Add a keybinding to switch between tokyonight and other themes
--- that would complement your starship theme
-config.key_tables = {
-	toggle_themes = {
-		{
-			key = "t",
-			action = wezterm.action_callback(function(window, pane)
-				local overrides = window:get_config_overrides() or {}
-				if overrides.color_scheme == "TokyoNightRainbow" then
-					overrides.color_scheme = "Tokyo Night Storm"
-				elseif overrides.color_scheme == "Tokyo Night Storm" then
-					overrides.color_scheme = "Tokyo Night Day"
-				else
-					overrides.color_scheme = "TokyoNightRainbow"
-				end
-				window:set_config_overrides(overrides)
-			end),
-		},
-		{ key = "Escape", action = "PopKeyTable" },
-	},
-}
+-- ========= Status Bar =========
+-- (Using the same status bar setup as before)
+config.enable_tab_bar = true
 
--- Add a key to enter the toggle_themes key table
-table.insert(config.keys, {
-	key = "t",
-	mods = "LEADER",
-	action = wezterm.action.ActivateKeyTable({ name = "toggle_themes", one_shot = false }),
-})
+local function get_git_branch()
+	local success, stdout, _ = wezterm.run_child_process({ "git", "rev-parse", "--abbrev-ref", "HEAD" })
+	if success then
+		local branch = stdout:gsub("[\r\n]", "")
+		if branch ~= "" then
+			return "  " .. branch
+		end
+	end
+	return ""
+end
+local function format_cwd(cwd)
+	local home = os.getenv("HOME")
+	if home and cwd:find(home, 1, true) == 1 then
+		cwd = "~" .. cwd:sub(#home + 1)
+	end
+	return "  " .. cwd
+end
+wezterm.on("update-right-status", function(window, pane)
+	local elements = {}
+	local git_branch = get_git_branch()
+	if git_branch ~= "" then
+		table.insert(elements, git_branch)
+	end
+	local cwd = pane:get_current_working_dir()
+	if cwd then
+		table.insert(elements, format_cwd(cwd.path))
+	end
+	table.insert(elements, " 󰣇 " .. window:active_workspace())
+	table.insert(elements, "  " .. wezterm.strftime("%H:%M"))
+	window:set_right_status(wezterm.format(elements))
+end)
+wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_width)
+	local pane = tab.active_pane
+	local title = pane.title
+	local index = tab.tab_index + 1
+	local prefix = string.format("%d: ", index)
+	max_width = max_width - wezterm.nerd_glyph_width(prefix) - 1
+	if #title > max_width then
+		title = wezterm.truncate_right(title, max_width)
+	end
+	return { { Text = prefix .. title } }
+end)
 
+-- ========= Other Settings =========
+config.scrollback_lines = 5000
+config.hyperlink_rules = wezterm.default_hyperlink_rules()
+config.default_domain = "local"
+config.audible_bell = "Disabled"
+config.window_close_confirmation = "AlwaysPrompt"
+
+-- ========= Final Return =========
 return config
