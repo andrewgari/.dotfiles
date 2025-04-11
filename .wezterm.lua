@@ -17,16 +17,10 @@ end
 local background_image_path = "./wallpaper.png" -- Linux/macOS example
 -- ========= Background Image =========
 
--- IMPORTANT: Replace this path with the ACTUAL path where you saved the image!
--- local background_image_path = 'C:\\Users\\YourUser\\Pictures\\image_bf0ab3.jpg' -- Windows example
-
 -- Check if the file exists before setting it
 local f = io.open(background_image_path, "r")
 if f then
 	config.window_background_image = background_image_path
-
-	-- NOTE: The 'window_background_image_scale' option caused an error and has been removed.
-	-- Wezterm will use its default scaling method for the image.
 
 	-- Dim the background image to make text more readable
 	-- Brightness: 0.0 (black) to 1.0 (original). Lower values dim more.
