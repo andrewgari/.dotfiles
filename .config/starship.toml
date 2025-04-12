@@ -1,131 +1,169 @@
-# ~/.config/starship.toml
+"$schema" = 'https://starship.rs/config-schema.json'
 
-# Inserts a blank line between shell prompts
-add_newline = true
-
-# Set default format order for the prompt
-# Explanation:
-# - $username, $hostname: User and machine info
-# - $directory: Current directory
-# - $git_branch, $git_status: Git information
-# - Language modules (python, node, rust, etc.)
-# - $docker: Docker context
-# - $package: Project version (npm, cargo)
-# - $cmd_duration: Duration of the last command
-# - $line_break: Moves to the next line
-# - $character: The prompt symbol (❯)
-# Inside the [directory] section of your simplified starship.toml
-# Replace the simple format line with this one:
-format = """\
-[╭─](fg:#928374)\
+format = """
+[](color_orange)\
+$os\
 $username\
-$hostname\
-[│](fg:#928374)\
+[](bg:color_yellow fg:color_orange)\
 $directory\
-[│](fg:#928374)\
+[](fg:color_yellow bg:color_aqua)\
 $git_branch\
 $git_status\
-$nodejs\
-$python\
+[](fg:color_aqua bg:color_blue)\
+$c\
 $rust\
 $golang\
+$nodejs\
+$php\
 $java\
-$cmd_duration
-[╰─](fg:#928374)$character"""
+$kotlin\
+$haskell\
+$python\
+[](fg:color_blue bg:color_bg3)\
+$docker_context\
+$conda\
+[](fg:color_bg3 bg:color_bg1)\
+$time\
+[ ](fg:color_bg1)\
+$line_break$character"""
 
-# Timeout for commands execution time module (milliseconds)
-[cmd_duration]
-min_time = 500 # Show only for commands taking 500ms or more
-format = " took [$duration](fg:#d79921)"
+palette = 'gruvbox_dark'
+
+[palettes.gruvbox_dark]
+color_fg0 = '#fbf1c7'
+color_bg1 = '#3c3836'
+color_bg3 = '#665c54'
+color_blue = '#458588'
+color_aqua = '#689d6a'
+color_green = '#98971a'
+color_orange = '#d65d0e'
+color_purple = '#b16286'
+color_red = '#cc241d'
+color_yellow = '#d79921'
+
+[os]
 disabled = false
+style = "bg:color_orange fg:color_fg0"
 
-# Directory module
+[os.symbols]
+Windows = "󰍲"
+Ubuntu = "󰕈"
+SUSE = ""
+Raspbian = "󰐿"
+Mint = "󰣭"
+Macos = "󰀵"
+Manjaro = ""
+Linux = "󰌽"
+Gentoo = "󰣨"
+Fedora = "󰣛"
+Alpine = ""
+Amazon = ""
+Android = ""
+Arch = "󰣇"
+Artix = "󰣇"
+EndeavourOS = ""
+CentOS = ""
+Debian = "󰣚"
+Redhat = "󱄛"
+RedHatEnterprise = "󱄛"
+Pop = ""
+
+[username]
+show_always = true
+style_user = "bg:color_orange fg:color_fg0"
+style_root = "bg:color_orange fg:color_fg0"
+format = '[ $user ]($style)'
+
 [directory]
-style = "fg:#458588" # Blueish
+style = "fg:color_fg0 bg:color_yellow"
 format = "[ $path ]($style)"
-truncation_length = 4 # Show only the last 4 directories
-truncate_to_repo = true # Truncate to repo root if possible
-fish_style_pwd_dir_length = 1 # Show only the first letter of parent directories
+truncation_length = 3
+truncation_symbol = "…/"
 
-# Git branch module
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = "󰝚 "
+"Pictures" = " "
+"Developer" = "󰲋 "
+
 [git_branch]
-symbol = "" # nf-fa-code_fork (Branch symbol)
-style = "fg:#98971a" # Green
-format = "[ $symbol $branch ]($style)"
+symbol = ""
+style = "bg:color_aqua"
+format = '[[ $symbol $branch ](fg:color_fg0 bg:color_aqua)]($style)'
 
-# Git status module
 [git_status]
-style = "fg:#98971a" # Green
-format = "[$all_status$ahead_behind]($style)"
-conflicted = "[=$count](fg:#cc241d)" # Red
-ahead = "[⇡$count](fg:#689d6a)" # Aqua
-behind = "[⇣$count](fg:#b16286)" # Purple
-diverged = "[⇕⇡$ahead_count⇣$behind_count](fg:#d65d0e)" # Orange
-untracked = "[?$count](fg:#d79921)" # Yellow
-stashed = "[*$count](fg:#458588)" # Blue
-modified = "[!$count](fg:#d79921)" # Yellow
-staged = "[+$count](fg:#98971a)" # Green
-renamed = "[»$count](fg:#b16286)" # Purple
-deleted = "[✘$count](fg:#cc241d)" # Red
+style = "bg:color_aqua"
+format = '[[($all_status$ahead_behind )](fg:color_fg0 bg:color_aqua)]($style)'
 
-# Language Modules - Using Gruvbox colors
 [nodejs]
-symbol = "" # nf-seti-nodejs
-style = "fg:#689d6a" # Aqua
-format = '[ $symbol($version) ]($style)'
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
-[python]
-symbol = "" # nf-seti-python
-style = "fg:#458588" # Blue
-format = '[ $symbol($version) ]($style)'
+[c]
+symbol = " "
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [rust]
-symbol = "" # nf-dev-rust
-style = "fg:#d65d0e" # Orange
-format = '[ $symbol($version) ]($style)'
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [golang]
-symbol = "" # nf-seti-go
-style = "fg:#689d6a" # Aqua
-format = '[ $symbol($version) ]($style)'
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[php]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [java]
-symbol = "" # nf-custom-java
-style = "fg:#cc241d" # Red
-format = '[ $symbol($version) ]($style)'
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
-[package] # Shows package version (npm, cargo, etc.)
-symbol = "" # nf-oct-package
-style = "fg:#b16286" # Purple
-format = '[ $symbol($version) ]($style)'
+[kotlin]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[haskell]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[python]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[docker_context]
+symbol = ""
+style = "bg:color_bg3"
+format = '[[ $symbol( $context) ](fg:#83a598 bg:color_bg3)]($style)'
+
+[conda]
+style = "bg:color_bg3"
+format = '[[ $symbol( $environment) ](fg:#83a598 bg:color_bg3)]($style)'
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:color_bg1"
+format = '[[  $time ](fg:color_fg0 bg:color_bg1)]($style)'
+
+[line_break]
 disabled = false
 
-#[docker]
-#symbol = "" # nf-linux-docker
-#style = "fg:#458588" # Blue
-#format = '[ $symbol($context) ]($style)'
-#disabled = false
-
-# User@Host module - Subtle grey
-[username]
-style_user = "fg:#a89984" # Grey
-style_root = "fg:#cc241d bg:#282828" # Red background for root
-format = "[$user]($style)"
-show_always = true # Keep consistent spacing
-
-[hostname]
-style = "fg:#a89984" # Grey
-ssh_only = false # Show hostname always (set to true to show only over SSH)
-format = "[$hostname]($style)"
-trim_at = "." # Trim domain name
-disabled = false # Set to true to disable hostname completely
-
-# Prompt character
 [character]
-success_symbol = "[❯](bold fg:#98971a)" # Green arrow for success
-error_symbol = "[❯](bold fg:#cc241d)" # Red arrow for error
-vimcmd_symbol = "[❮](bold fg:#d79921)" # Yellow arrow in Vim mode
-vimcmd_replace_one_symbol = "[❮](bold fg:#b16286)" # Purple arrow in Vim replace mode
-vimcmd_replace_symbol = "[❮](bold fg:#b16286)" # Purple arrow in Vim replace mode
-vimcmd_visual_symbol = "[❮](bold fg:#458588)" # Blue arrow in Vim visual mode
-
+disabled = false
+success_symbol = '[](bold fg:color_green)'
+error_symbol = '[](bold fg:color_red)'
+vimcmd_symbol = '[](bold fg:color_green)'
+vimcmd_replace_one_symbol = '[](bold fg:color_purple)'
+vimcmd_replace_symbol = '[](bold fg:color_purple)'
+vimcmd_visual_symbol = '[](bold fg:color_yellow)'

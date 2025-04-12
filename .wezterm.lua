@@ -37,7 +37,7 @@ if f then
 
 	-- Dim the background image (Using 1.0 brightness for TESTING!)
 	config.window_background_image_hsb = {
-		brightness = 0.95, -- Use 1.0 (full brightness) for testing! Adjust later (e.g., 0.3).
+		brightness = 1.0, -- Use 1.0 (full brightness) for testing! Adjust later (e.g., 0.3).
 		hue = 1.0,
 		saturation = 1.0,
 	}
@@ -62,7 +62,7 @@ config.font = wezterm.font_with_fallback({
 	"Symbols Nerd Font Mono",
 	"Noto Color Emoji",
 })
-config.font_size = 11.0
+config.font_size = 16.0
 
 -- Makes the WHOLE window semi-transparent
 -- 1.0 = Opaque (Default)
