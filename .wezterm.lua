@@ -37,7 +37,7 @@ if f then
 
 	-- Dim the background image (Using 1.0 brightness for TESTING!)
 	config.window_background_image_hsb = {
-		brightness = 0.3, -- Use 1.0 (full brightness) for testing! Adjust later (e.g., 0.3).
+		brightness = 0.8, -- Use 1.0 (full brightness) for testing! Adjust later (e.g., 0.3).
 		hue = 1.0,
 		saturation = 1.0,
 	}
