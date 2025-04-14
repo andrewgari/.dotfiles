@@ -23,6 +23,8 @@
     python3Full
     gcc
     cmake
+    haskell-ci
+    haskell.package-list
     
     # Version control
     git
