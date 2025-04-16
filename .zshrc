@@ -102,15 +102,6 @@ bindkey '^K' kill-line                  # Ctrl + K
 bindkey '^R' history-incremental-search-backward  # Ctrl + R
 
 # -----------------------------
-# Prompt Enhancements
-# -----------------------------
-
-# Use Starship if installed
-if command -v starship &>/dev/null; then
-    eval "$(starship init zsh)"
-fi
-
-# -----------------------------
 # Completion System
 # -----------------------------
 
