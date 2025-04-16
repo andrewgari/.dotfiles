@@ -68,7 +68,7 @@ config.font_size = 16.0
 -- 1.0 = Opaque (Default)
 -- 0.0 = Fully Transparent (Invisible)
 -- Values between 0.7 and 0.95 are common for transparency.
-config.window_background_opacity = 0.25 -- Adjust this value to your liking
+config.window_background_opacity = 0.95 -- Adjust this value to your liking
 
 -- Enable font ligatures
 config.harfbuzz_features = { "calt=1", "clig=1", "liga=1" }
