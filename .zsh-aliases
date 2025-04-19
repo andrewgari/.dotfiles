@@ -1,3 +1,11 @@
+# -------------------
+# SSH Shortcuts
+# -------------------
+alias sshpc='ssh andrewgari@192.168.50.2'
+alias sshtower='ssh root@192.168.50.3'
+alias sshlaptop='ssh andrewgari@192.168.50.4'
+alias sshwork='ssh root@192.168.50.10'
+
 alias dnf='dnf --skip-unavailable --skip-broken'
 
 # -------------------
@@ -61,82 +69,6 @@ create-alias() {
     echo "✅ Alias '$alias_name' added successfully!"
 }
 
-# Edit an existing alias
-edit-alias() {
-    if [[ -z "$1" ]]; then
-        echo "⚠️ Usage: edit-alias <alias_name>"
-        return 1
-    fi
-
-    local alias_name="$1"
-    local current_alias
-    
-    # Check if alias exists
-    if ! alias "$alias_name" &>/dev/null; then
-        echo "❌ Alias '$alias_name' doesn't exist!"
-        return 1
-    fi
-    
-    # Get current alias definition
-    current_alias=$(alias "$alias_name" | sed "s/alias $alias_name=//;s/'//g")
-    
-    # Prompt for new command
-    echo "📝 Current command: $current_alias"
-    read -p "Enter new command: " new_command
-    
-    # Replace in .zsh-aliases.local if present
-    if grep -q "alias $alias_name=" "$HOME/.zsh-aliases.local" 2>/dev/null; then
-        sed -i "s|alias $alias_name=.*|alias $alias_name='$new_command'|" "$HOME/.zsh-aliases.local"
-        source "$HOME/.zsh-aliases.local"
-        echo "✅ Alias updated in .zsh-aliases.local!"
-    # Replace in .zsh-aliases if present
-    elif grep -q "alias $alias_name=" "$HOME/.zsh-aliases" 2>/dev/null; then
-        echo "⚠️ This alias is defined in .zsh-aliases, not in .zsh-aliases.local"
-        echo "⚠️ To edit it, open .zsh-aliases in your editor: aliases"
-    # Replace in .zshrc if present
-    elif grep -q "alias $alias_name=" "$HOME/.zshrc" 2>/dev/null; then
-        sed -i "s|alias $alias_name=.*|alias $alias_name='$new_command'|" "$HOME/.zshrc"
-        source "$HOME/.zshrc"
-        echo "✅ Alias updated in .zshrc!"
-    else
-        echo "❌ Couldn't find alias definition in config files."
-    fi
-}
-
-# Remove an alias
-remove-alias() {
-    if [[ -z "$1" ]]; then
-        echo "⚠️ Usage: remove-alias <alias_name>"
-        return 1
-    fi
-
-    local alias_name="$1"
-    
-    # Check if alias exists
-    if ! alias "$alias_name" &>/dev/null; then
-        echo "❌ Alias '$alias_name' doesn't exist!"
-        return 1
-    fi
-    
-    # Remove from .zsh-aliases.local if present
-    if grep -q "alias $alias_name=" "$HOME/.zsh-aliases.local" 2>/dev/null; then
-        sed -i "/alias $alias_name=/d" "$HOME/.zsh-aliases.local"
-        source "$HOME/.zsh-aliases.local"
-        echo "✅ Alias removed from .zsh-aliases.local!"
-    # Remove from .zshrc if present
-    elif grep -q "alias $alias_name=" "$HOME/.zshrc" 2>/dev/null; then
-        sed -i "/alias $alias_name=/d" "$HOME/.zshrc"
-        source "$HOME/.zshrc"
-        echo "✅ Alias removed from .zshrc!"
-    else
-        echo "⚠️ Alias is defined in .zsh-aliases"
-        echo "⚠️ To remove it, edit .zsh-aliases in your editor: aliases"
-    fi
-    
-    # Unset the alias
-    unalias "$alias_name" 2>/dev/null
-}
-
 # -------------------
 # 🔹 SYSTEM UTILITIES
 # -------------------
@@ -163,12 +95,6 @@ alias io_stats="iostat -x 1 3"  # Disk I/O statistics
 alias net_stats="ss -tuln"  # Network port usage
 alias sys_info="inxi -Fxz"  # Full system information
 alias uptime_info="uptime -p"  # Pretty uptime
-
-# Power management
-alias reboot_now="sudo systemctl reboot"  # Quick reboot
-alias shutdown_now="sudo systemctl poweroff"  # Quick shutdown
-alias suspend="systemctl suspend"  # Suspend system
-alias hibernate="systemctl hibernate"  # Hibernate system
 
 # File operations
 alias trash='mv --force -t ~/.local/share/Trash '
@@ -221,64 +147,6 @@ fi
 if command -v rg &>/dev/null; then
     alias grep='rg'
 fi
-
-# Extract any archive
-extract() {
-    if [ -f $1 ] ; then
-        case $1 in
-            *.tar.bz2)   tar xjf $1     ;;
-            *.tar.gz)    tar xzf $1     ;;
-            *.bz2)       bunzip2 $1     ;;
-            *.rar)       unrar e $1     ;;
-            *.gz)        gunzip $1      ;;
-            *.tar)       tar xf $1      ;;
-            *.tbz2)      tar xjf $1     ;;
-            *.tgz)       tar xzf $1     ;;
-            *.zip)       unzip $1       ;;
-            *.Z)         uncompress $1  ;;
-            *.7z)        7z x $1        ;;
-            *)           echo "'$1' cannot be extracted via extract()" ;;
-        esac
-    else
-        echo "'$1' is not a valid file"
-    fi
-}
-
-# -------------------
-# 🔹 PACKAGE MANAGEMENT
-# -------------------
-
-alias update-pkg='
-  if command -v apt >/dev/null; then
-    sudo apt update;
-  elif command -v dnf >/dev/null; then
-    sudo dnf check-update;
-  elif command -v yay >/dev/null; then
-    yay -Sy;
-  elif command -v pacman >/dev/null; then
-    sudo pacman -Sy;
-  elif command -v nala >/dev/null; then
-    sudo nala fetch;
-  else
-    echo "No known package manager found.";
-  fi
-'
-
-alias pkg-upgrade='
-  if command -v apt >/dev/null; then
-    sudo apt upgrade -y;
-  elif command -v dnf >/dev/null; then
-    sudo dnf upgrade --refresh -y;
-  elif command -v yay >/dev/null; then
-    yay -Sua --noconfirm;
-  elif command -v pacman >/dev/null; then
-    sudo pacman -Su --noconfirm;
-  elif command -v nala >/dev/null; then
-    sudo nala upgrade -y;
-  else
-    echo "No known package manager found.";
-  fi
-'
 
 alias status='systemctl status'
 alias start='systemctl start'
@@ -344,22 +212,6 @@ alias -- -="cd -"      # Go back to previous directory
 alias rsync="rsync -avz --progress --one-file-system"
 alias giga-rsync="rsync -avz --progress"
 alias rsync-update="rsync -avzu --progress --delete"
-
-# Create directory and enter it
-mkcd() {
-    mkdir -p "$1" && cd "$1"
-}
-
-# Find directory and cd into it
-cdg() {
-    local dir
-    dir=$(find ${1:-.} -type d -not -path "*/\.*" | fzf +m) && cd "$dir"
-}
-
-# List directory when changing directory
-function cd() {
-    builtin cd "$@" && ls
-}
 
 # Exa (Better `ls`)
 if command -v exa &>/dev/null; then
